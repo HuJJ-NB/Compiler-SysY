@@ -1,0 +1,1 @@
+-include script/build.mk

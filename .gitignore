@@ -1,0 +1,13 @@
+*.*
+*
+!*/
+# !src/*
+# !script/*
+!Makefile
+!README.md
+!LICENSE
+!Makefile
+!.gitignore
+!*.mk
+!*.[ch]
+!*.cc
