@@ -4,7 +4,7 @@
 #include <lexer.h>
 #include <debug.h>
 
-#include <regex.h>
+#include <pcre.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -43,7 +43,7 @@ static struct rule {
   {"break", TK_BREAK},
   {"continue", TK_CONTINUE},
   {"return", TK_RETURN},
-  {"[a-zA-Z][a-zA-Z0-9_]*", TK_ID},
+  {"[a-zA-Z]\\w*", TK_ID},
   {"\\{", '{'},
   {"\\}", '}'},
   {"\\[", '['},
@@ -51,8 +51,8 @@ static struct rule {
   {"\\(", '('},
   {"\\)", ')'},
   {";", ';'},
-  {"//[^\n]*", TK_SNT},
-  {"/\\*.*\\*/", TK_MNT},
+  {"//.*", TK_SNT},
+  {"/\\*[\\s\\S]*?\\*/", TK_MNT},
   {"==", TK_EQUAL},
   {"!=", TK_NEQUAL},
   {"=", TK_ASSIGN},
@@ -77,8 +77,6 @@ const char *regex_display(int type) {
   switch (type) {
   case TK_ENTER:
     return "\\n";
-  case TK_SNT:
-    return "//[^\\n]*";
   default:
     return rules[type].regex;
   }
@@ -86,22 +84,19 @@ const char *regex_display(int type) {
 
 #define NR_REGEX ARRLEN(rules)
 
-static regex_t re[NR_REGEX] = {};
+static pcre *re[NR_REGEX];
 
 /* Rules are used for many times.
  * Therefore we compile them only once before any usage.
  */
 void init_regex() {
   int i;
-  char error_msg[128];
-  int ret;
+  const char *pcre_error;
+  int pcre_error_offset;
 
   for (i = 0; i < NR_REGEX; i ++) {
-    ret = regcomp(&re[i], rules[i].regex, REG_EXTENDED);
-    if (ret != 0) {
-      regerror(ret, &re[i], error_msg, 128);
-      panic("regex compilation failed: %s\n%s", error_msg, rules[i].regex);
-    }
+    re[i] = pcre_compile(rules[i].regex, 0, &pcre_error, &pcre_error_offset, NULL);
+    Assert(re[i], "regex rules[%d] compilation failed at %d: %s\n%s", i, pcre_error_offset, pcre_error, rules[i].regex);
   }
 }
 
@@ -110,26 +105,28 @@ static int nr_token __attribute__((used))  = 0;
 
 static bool make_token(char *src) {
   int rule_idx;
-  regmatch_t pmatch;
+  int result[6];
 
   nr_token = 0;
 
   int pos = 0;
   int row = 0;
   int lines[MAX_LINE] = {0};
+
   int position = 0;
+  size_t len = strlen(src);
 
   while (src[position] != '\0') {
     /* Try all rules one by one. */
     Assert(nr_token < MAX_NR_TOKEN, "Too many tokens.\n");
     for (rule_idx = 0; rule_idx < NR_REGEX; rule_idx++) {
-      if (regexec(&re[rule_idx], src + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
+      if (pcre_exec(re[rule_idx], NULL, src, (int)len, position, 0, result, 6) == 1 && result[0] == position) {
         char *substr_start = src + position;
-        int substr_len = pmatch.rm_eo;
+        int substr_len = result[1] - result[0];
 
         /*  if match wrong number  */
         if(rules[rule_idx].token_type == TK_ERR_INTCON) {
-          printf("Match wrong number at row %d pos %d\n%s\n%*.s^\n", row, pos, strtok(src + lines[row], "\n"), pos, "");
+          printf("Match wrong number at row %d pos %d\n%.*s" ASNI_FMT("%.*s", ASNI_FG_RED) "%s\n", row, pos, pos, src + lines[row], substr_len, substr_start, strtok(src + lines[row], "\n") + substr_len);
           return false;
         }
 
