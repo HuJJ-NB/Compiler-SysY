@@ -13,10 +13,15 @@
 #define MAX_LINE 1000
 #define MAX_LINE_LEN 500
 
-#define ENTER_SYM "\n" //换行符平台无关化
-
 enum {
-  TK_NOTYPE = 256, TK_ENTER, TK_DNUM,TK_HNUM, TK_ONUM,TK_ERR_NUM,TK_NUM,TK_REG,
+  TK_NOTYPE = 256, TK_ENTER,
+  TK_DEC_INTCON, TK_HEX_INTCON, TK_OCT_INTCON,TK_ERR_INTCON,TK_INTCON,
+  TK_DEC_FLOATCON, TK_HEX_FLOATCON, TK_OCT_FLOATCON, TK_ERR_FLOATCON, TK_FLOATCON,
+  TK_ID,
+  TK_INT, TK_VOID, TK_IF, TK_ELSE, TK_WHILE, TK_BREAK, TK_CONTINUE, TK_RETURN,
+  TK_SNT, TK_MNT,
+  TK_ASSIGN,
+  TK_EQUAL, TK_NEQUAL,
 
   /* TODO: Add more token types */
 };
@@ -28,29 +33,56 @@ static struct rule {
   /* TODO: Add more rules.
    * Pay attention to the precedence level of different rules.
    */
-  {ENTER_SYM, TK_ENTER},
-  {"\\$[\\$A-Za-z0-9][A-Za-z0-9]*", TK_REG},
-  {"true", 'T'},
-  {"false", 'F'},
-  {" +", TK_NOTYPE},    // spaces
-  {"!=", '!'},
-  {"==", '='},        // equal
-  {"<", '<'},
-  {">", '>'},
-  {"~|!", '~'},
-  {"&&|&", '&'},
-  {"\\|\\||\\|", '|'},
-  {"\\+", '+'},         // plus
+  {"\n", TK_ENTER},
+  {"\\s+", TK_NOTYPE},    // spaces
+  {"int", TK_INT},
+  {"void", TK_VOID},
+  {"if", TK_IF},
+  {"else", TK_ELSE},
+  {"while", TK_WHILE},
+  {"break", TK_BREAK},
+  {"continue", TK_CONTINUE},
+  {"return", TK_RETURN},
+  {"[a-zA-Z][a-zA-Z0-9_]*", TK_ID},
+  {"\\{", '{'},
+  {"\\}", '}'},
+  {"\\[", '['},
+  {"\\]", ']'},
+  {"\\(", '('},
+  {"\\)", ')'},
+  {";", ';'},
+  {"//[^\n]*", TK_SNT},
+  {"/\\*.*\\*/", TK_MNT},
+  {"==", TK_EQUAL},
+  {"!=", TK_NEQUAL},
+  {"=", TK_ASSIGN},
+  {"\\+", '+'},
   {"-", '-'},
   {"\\*", '*'},
   {"/", '/'},
-  {"\\(", '('},
-  {"\\)", ')'},
-  {"00[1-9a-fA-F]", TK_ERR_NUM},
-  {"0[1-7][0-7]*", TK_ONUM},
-  {"0x[0-9A-Fa-f]+", TK_HNUM},
-  {"[1-9][0-9]*|0+", TK_DNUM},
+  // {"true", 'T'},
+  // {"false", 'F'},
+  // {"<", '<'},
+  // {">", '>'},
+  // {"~|!", '~'},
+  // {"&&|&", '&'},
+  // {"\\|\\||\\|", '|'},
+  {"00[1-9a-fA-F]", TK_ERR_INTCON},
+  {"0[1-7][0-7]*", TK_OCT_INTCON},
+  {"0x[0-9A-Fa-f]+", TK_HEX_INTCON},
+  {"[1-9][0-9]*|0+", TK_DEC_INTCON},
 };
+
+const char *regex_display(int type) {
+  switch (type) {
+  case TK_ENTER:
+    return "\\n";
+  case TK_SNT:
+    return "//[^\\n]*";
+  default:
+    return rules[type].regex;
+  }
+}
 
 #define NR_REGEX ARRLEN(rules)
 
@@ -96,62 +128,44 @@ static bool make_token(char *src) {
         int substr_len = pmatch.rm_eo;
 
         /*  if match wrong number  */
-        if(rules[rule_idx].token_type == TK_ERR_NUM) {
-          printf("Match wrong number at row %d pos %d\n%s\n%*.s^\n", row, pos, strtok(src + lines[row], ENTER_SYM), pos, "");
+        if(rules[rule_idx].token_type == TK_ERR_INTCON) {
+          printf("Match wrong number at row %d pos %d\n%s\n%*.s^\n", row, pos, strtok(src + lines[row], "\n"), pos, "");
           return false;
         }
 
+        tokens[nr_token].row = row;
+        tokens[nr_token].pos = pos;
         position += substr_len;
-        pos += substr_len;
 
+        if (rules[rule_idx].token_type == TK_ENTER) {
+          lines[++row] = position;
+          pos = 0;
+          break;
+        }
+        pos += substr_len;
         if (rules[rule_idx].token_type == TK_NOTYPE) {
           break;
         }
-        else if (rules[rule_idx].token_type == TK_ENTER) {
-            lines[++row] = position;
-            pos = 0;
-            break;
-        }
-        else {
-          tokens[nr_token].row = row;
-          tokens[nr_token].pos = pos;
-        }
 
-        printf("No.%d match rules[%d] = %s\n%.*s\n\n", nr_token, rule_idx, rules[rule_idx].regex, pos, src + lines[row]);
+        printf(ASNI_FMT("No.%d match rules[%d] = %s\n", ASNI_FG_BLUE) "%.*s" ASNI_FMT("%.*s", ASNI_FG_YELLOW ) "\n", nr_token, rule_idx, regex_display(rule_idx), tokens[nr_token].pos, src + lines[row], substr_len, substr_start);
+
 
         /*  NUM  */
         switch (rules[rule_idx].token_type) {
-          case TK_DNUM:
+          case TK_DEC_INTCON:
             tokens[nr_token].val = strtoul(substr_start, NULL, 10);
-            tokens[nr_token].type = TK_NUM;
+            tokens[nr_token].type = TK_INTCON;
             break;
-          case TK_HNUM:
+          case TK_HEX_INTCON:
             tokens[nr_token].val = strtoul(substr_start, NULL, 16);
-            tokens[nr_token].type = TK_NUM;
+            tokens[nr_token].type = TK_INTCON;
             break;
-          case TK_ONUM:
+          case TK_OCT_INTCON:
             tokens[nr_token].val = strtoul(substr_start, NULL, 8);
-            tokens[nr_token].type = TK_NUM;
-          case TK_REG:
-          case 'T':
-          case 'F':
-          case '=':
-          case '!':
-          case '<':
-          case '>':
-          case '&':
-          case '|':
-          case '~':
-          case '+':
-          case '-':
-          case '*':
-          case '/':
-          case '(':
-          case ')':
+            tokens[nr_token].type = TK_INTCON;
+          default: 
             tokens[nr_token].type = rules[rule_idx].token_type;
             break;
-          default: 
-            TODO();
         }
 
         /*  str  */
@@ -174,6 +188,7 @@ static bool make_token(char *src) {
 }
 
 int lexer(char *src, Token **tokens_p) {
+  Assert(src, "Lexer get no source, points to the zero page.");
   if (make_token(src) == false) {
     *tokens_p = NULL;
     return 0;
@@ -182,5 +197,4 @@ int lexer(char *src, Token **tokens_p) {
     *tokens_p = tokens;
     return nr_token;
   }
-
 }
