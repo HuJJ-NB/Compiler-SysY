@@ -44,7 +44,7 @@ $(OBJ_DIR)/%.o: %.cc
 app: $(BINARY)
 
 $(BINARY): $(OBJS)
-	@echo + LD $<
+	@echo + LD $@
 	@$(LD) $(LDFLAGS) -o $@ $^
 
 clean:
