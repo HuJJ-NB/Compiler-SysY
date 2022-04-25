@@ -1,4 +1,5 @@
 NAME := app
+ARGS := 
 
 -include script/build.mk
 
@@ -12,4 +13,9 @@ LDFLAGS += $(CFLAGS_BUILD)
 
 run:$(BINARY)
 	@echo run $(BINARY)
-	@$(BINARY)
+	@$(BINARY) $(ARGS)
+
+# vs code clangd use compile_commands.json to work
+pre:
+	@echo + compile_commands.json
+	@compiledb -n make run

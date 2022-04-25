@@ -2,18 +2,18 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <lexer.h>
-#include <regex.h>
 #include <debug.h>
-#include <stdio.h>
+
+#include <regex.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/types.h>
 
 #define ARRLEN(arr) (int)(sizeof(arr) / sizeof(arr[0]))
 #define MAX_NR_TOKEN 70000
 #define MAX_LINE 1000
 #define MAX_LINE_LEN 500
-#define ENTER_SYM "\n" //换行符 架构无关化
+
+#define ENTER_SYM "\n" //换行符平台无关化
 
 enum {
   TK_NOTYPE = 256, TK_ENTER, TK_DNUM,TK_HNUM, TK_ONUM,TK_ERR_NUM,TK_NUM,TK_REG,
@@ -76,7 +76,7 @@ void init_regex() {
 static Token tokens[MAX_NR_TOKEN + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used as other, just book the finsh position.
 static int nr_token __attribute__((used))  = 0;
 
-static bool make_token(char *expr) {
+static bool make_token(char *src) {
   int rule_idx;
   regmatch_t pmatch;
 
@@ -87,21 +87,20 @@ static bool make_token(char *expr) {
   int lines[MAX_LINE] = {0};
   int position = 0;
 
-  while (expr[position] != '\0') {
+  while (src[position] != '\0') {
     /* Try all rules one by one. */
     Assert(nr_token < MAX_NR_TOKEN, "Too many tokens.\n");
     for (rule_idx = 0; rule_idx < NR_REGEX; rule_idx++) {
-      if (regexec(&re[rule_idx], expr + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
-        char *substr_start = expr + position;
+      if (regexec(&re[rule_idx], src + position, 1, &pmatch, 0) == 0 && pmatch.rm_so == 0) {
+        char *substr_start = src + position;
         int substr_len = pmatch.rm_eo;
 
         /*  if match wrong number  */
         if(rules[rule_idx].token_type == TK_ERR_NUM) {
-          printf("Match wrong number at row %d pos %d\n%s\n%*.s^\n", row, pos, strtok(expr + lines[row], ENTER_SYM), pos, "");
+          printf("Match wrong number at row %d pos %d\n%s\n%*.s^\n", row, pos, strtok(src + lines[row], ENTER_SYM), pos, "");
           return false;
         }
 
-        /*  begin  */
         position += substr_len;
         pos += substr_len;
 
@@ -118,30 +117,21 @@ static bool make_token(char *expr) {
           tokens[nr_token].pos = pos;
         }
 
+        printf("No.%d match rules[%d] = %s\n%.*s\n\n", nr_token, rule_idx, rules[rule_idx].regex, pos, src + lines[row]);
+
         /*  NUM  */
         switch (rules[rule_idx].token_type) {
           case TK_DNUM:
             tokens[nr_token].val = strtoul(substr_start, NULL, 10);
+            tokens[nr_token].type = TK_NUM;
             break;
           case TK_HNUM:
             tokens[nr_token].val = strtoul(substr_start, NULL, 16);
+            tokens[nr_token].type = TK_NUM;
             break;
           case TK_ONUM:
             tokens[nr_token].val = strtoul(substr_start, NULL, 8);
-        }
-        
-        /*  str  */
-        strncpy(tokens[nr_token].str, substr_start, substr_len);
-
-        printf("match rules[%d] = %s\n%.*s\n", rule_idx, rules[rule_idx].regex, pos, expr + lines[row]);
-
-        /* check */
-        switch (rules[rule_idx].token_type) {
-          case TK_DNUM:
-          case TK_HNUM:
-          case TK_ONUM:
-            tokens[nr_token++].type = TK_NUM;
-            break;
+            tokens[nr_token].type = TK_NUM;
           case TK_REG:
           case 'T':
           case 'F':
@@ -158,20 +148,24 @@ static bool make_token(char *expr) {
           case '/':
           case '(':
           case ')':
-            tokens[nr_token++].type = rules[rule_idx].token_type;
+            tokens[nr_token].type = rules[rule_idx].token_type;
             break;
           default: 
             TODO();
         }
+
+        /*  str  */
+        strncpy(tokens[nr_token].str, substr_start, substr_len);
+
+        nr_token++;
         break;
       }
     }
 
     if (rule_idx == NR_REGEX) {
-      printf("No match at row %d pos %d\n%s\n%*.s^\n", row, pos, strtok(expr + lines[row], "\n"), pos, "");
+      printf("No match at row %d pos %d\n%s\n%*.s^\n", row, pos, strtok(src + lines[row], "\n"), pos, "");
       return false;
     }
-
   }
   tokens[nr_token].pos = pos;
   tokens[nr_token].row = row;
@@ -179,11 +173,14 @@ static bool make_token(char *expr) {
   return true;
 }
 
-int lexer(char *expr, Token **tokens_p) {
-  if (make_token(expr) == false) {
+int lexer(char *src, Token **tokens_p) {
+  if (make_token(src) == false) {
     *tokens_p = NULL;
+    return 0;
+  }
+  else {
+    *tokens_p = tokens;
+    return nr_token;
   }
 
-  *tokens_p = tokens;
-  return nr_token;
 }

@@ -21,7 +21,7 @@ typedef struct token {
 /* `tokens_p` point to the array */
 /* `tokens[0]` to `tokens[N-1]` is koken and `tokens[N]` is just book the finish row and position. */
 /* Do not free `tokens_p` */
-int lexer(char *expr, Token **tokens_p);
+int lexer(char *src, Token **tokens_p);
 
 /* do this before use lexer */
 void init_regex();

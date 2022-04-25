@@ -44,11 +44,9 @@ $(OBJ_DIR)/%.o: %.cc
 app: $(BINARY)
 
 $(BINARY): $(OBJS)
-	@echo $(OBJS)
-	@echo $(SRCS)
 	@echo + LD $<
 	@$(LD) $(LDFLAGS) -o $@ $^
 
 clean:
 	@echo clean $(CLEAN_TARGET)
-	-@rm -rf $(CLEAN_TARGET)
+	-@rm -rf $(CLEAN_TARGET)/*
