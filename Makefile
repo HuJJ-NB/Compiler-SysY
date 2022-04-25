@@ -1,5 +1,4 @@
 NAME := app
-ARGS := 
 
 -include script/build.mk
 
@@ -9,8 +8,9 @@ CFLAGS_BUILD += -fsanitize=address
 CFLAGS  += $(CFLAGS_BUILD)
 LDFLAGS += $(CFLAGS_BUILD)
 
-.PHONY: run
+.PHONY: run pre
 
+ARGS := $(WORK_DIR)/resource/test.c -l $(BUILD_DIR)/log.txt
 run:$(BINARY)
 	@echo run $(BINARY)
 	@$(BINARY) $(ARGS)

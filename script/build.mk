@@ -21,8 +21,9 @@ INCLUDES = $(addprefix -I, $(INC_PATH))
 CFLAGS  := -O2 -MMD -Wall -Werror $(INCLUDES) $(CFLAGS)
 LDFLAGS := -O2 $(LDFLAGS)
 
-CXXSRC = $(shell find src -name "*.cc")
-SRCS = $(shell find src -name "*.c")
+SRC_PATH = src
+CXXSRC = $(shell find $(SRC_PATH) -name "*.cc")
+SRCS = $(shell find $(SRC_PATH) -name "*.c")
 OBJS = $(SRCS:%.c=$(OBJ_DIR)/%.o) $(CXXSRC:%.cc=$(OBJ_DIR)/%.o)
 
 $(OBJ_DIR)/%.o: %.c
