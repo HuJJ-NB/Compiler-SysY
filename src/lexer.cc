@@ -15,13 +15,16 @@
 
 enum {
   TK_NOTYPE = 256, TK_ENTER,
-  TK_DEC_INTCON, TK_HEX_INTCON, TK_OCT_INTCON,TK_ERR_INTCON,TK_INTCON,
+  TK_HEX_INTCON, TK_DEC_INTCON, TK_OCT_INTCON, TK_BIN_INTCON,
+  TK_ERR_DEC_INTCON, TK_ERR_OCT_INTCON, TK_ERR_BIN_INTCON, TK_ERR_INTCON,
+  TK_INTCON,
   TK_DEC_FLOATCON, TK_HEX_FLOATCON, TK_OCT_FLOATCON, TK_ERR_FLOATCON, TK_FLOATCON,
   TK_ID,
   TK_INT, TK_VOID, TK_IF, TK_ELSE, TK_WHILE, TK_BREAK, TK_CONTINUE, TK_RETURN,
   TK_SNT, TK_MNT,
-  TK_ASSIGN,
-  TK_EQUAL, TK_NEQUAL,
+  TK_ASSIGN, TK_ADD_ASSIGN, TK_SUB_ASSIGN, TK_MUL_ASSIGN, TK_DIV_ASSIGN, TK_MOD_ASSIGN,
+  TK_EQUAL, TK_NEQUAL, TK_LTE, TK_LT, TK_GTE, TK_GT,
+  TK_STR,
 
   /* TODO: Add more token types */
 };
@@ -51,26 +54,43 @@ static struct rule {
   {"\\(", '('},
   {"\\)", ')'},
   {";", ';'},
+  {",", ','},
   {"//.*", TK_SNT},
   {"/\\*[\\s\\S]*?\\*/", TK_MNT},
+  {"\".*?\"", TK_STR},
   {"==", TK_EQUAL},
   {"!=", TK_NEQUAL},
+  {"<=", TK_LTE},
+  {"<", TK_LT},
+  {">=", TK_GTE},
+  {">", TK_GT},
+  {"!", '!'},
+  {"&&|&", '&'},
+  {"\\|\\||\\|", '|'},
   {"=", TK_ASSIGN},
+  {"\\+=", TK_ADD_ASSIGN},
+  {"-=", TK_SUB_ASSIGN},
+  {"\\*=", TK_MUL_ASSIGN},
+  {"/=", TK_DIV_ASSIGN},
+  {"%=", TK_MOD_ASSIGN},
   {"\\+", '+'},
   {"-", '-'},
   {"\\*", '*'},
   {"/", '/'},
+  {"%", '%'},
   // {"true", 'T'},
   // {"false", 'F'},
-  // {"<", '<'},
-  // {">", '>'},
-  // {"~|!", '~'},
-  // {"&&|&", '&'},
-  // {"\\|\\||\\|", '|'},
-  {"00[1-9a-fA-F]", TK_ERR_INTCON},
-  {"0[1-7][0-7]*", TK_OCT_INTCON},
-  {"0x[0-9A-Fa-f]+", TK_HEX_INTCON},
-  {"[1-9][0-9]*|0+", TK_DEC_INTCON},
+  {"0[xX][\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
+  {"0[xX][\\dA-Fa-f]+", TK_HEX_INTCON},
+  {"0[bB][\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
+  {"0[bB][01]*[2-9A-Fa-f][\\dA-Fa-f]*", TK_ERR_BIN_INTCON},
+  {"0[bB][01]+", TK_BIN_INTCON},
+  {"0[\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
+  {"0[0-7]*[8-9A-Fa-f][\\dA-Fa-f]*", TK_ERR_OCT_INTCON},
+  {"0[0-7]+", TK_OCT_INTCON},
+  {"[\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
+  {"\\d+[A-Fa-f][\\dA-Fa-f]*", TK_ERR_DEC_INTCON},
+  {"\\d+", TK_DEC_INTCON},
 };
 
 const char *regex_display(int type) {
@@ -125,6 +145,18 @@ static bool make_token(char *src) {
         int substr_len = result[1] - result[0];
 
         /*  if match wrong number  */
+        if(rules[rule_idx].token_type == TK_ERR_DEC_INTCON) {
+          printf("Match wrong decimal number at row %d pos %d\n%.*s" ASNI_FMT("%.*s", ASNI_FG_RED) "%s\n", row, pos, pos, src + lines[row], substr_len, substr_start, strtok(src + lines[row], "\n") + substr_len);
+          return false;
+        }
+        if(rules[rule_idx].token_type == TK_ERR_OCT_INTCON) {
+          printf("Match wrong octal number at row %d pos %d\n%.*s" ASNI_FMT("%.*s", ASNI_FG_RED) "%s\n", row, pos, pos, src + lines[row], substr_len, substr_start, strtok(src + lines[row], "\n") + substr_len);
+          return false;
+        }
+        if(rules[rule_idx].token_type == TK_ERR_BIN_INTCON) {
+          printf("Match wrong binary number at row %d pos %d\n%.*s" ASNI_FMT("%.*s", ASNI_FG_RED) "%s\n", row, pos, pos, src + lines[row], substr_len, substr_start, strtok(src + lines[row], "\n") + substr_len);
+          return false;
+        }
         if(rules[rule_idx].token_type == TK_ERR_INTCON) {
           printf("Match wrong number at row %d pos %d\n%.*s" ASNI_FMT("%.*s", ASNI_FG_RED) "%s\n", row, pos, pos, src + lines[row], substr_len, substr_start, strtok(src + lines[row], "\n") + substr_len);
           return false;
