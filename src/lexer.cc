@@ -10,8 +10,7 @@
 
 #define ARRLEN(arr) (int)(sizeof(arr) / sizeof(arr[0]))
 #define MAX_NR_TOKEN 70000
-#define MAX_LINE 1000
-#define MAX_LINE_LEN 500
+#define MAX_NR_LINE 1000
 
 enum {
   TK_NOTYPE = 256, TK_ENTER,
@@ -105,6 +104,8 @@ const char *regex_display(int type) {
 #define NR_REGEX ARRLEN(rules)
 
 static pcre *re[NR_REGEX];
+static const char *line_rule = ".*\n?";
+static pcre *line_re;
 
 /* Rules are used for many times.
  * Therefore we compile them only once before any usage.
@@ -118,7 +119,23 @@ void init_regex() {
     re[i] = pcre_compile(rules[i].regex, 0, &pcre_error, &pcre_error_offset, NULL);
     Assert(re[i], "regex rules[%d] compilation failed at %d: %s\n%s", i, pcre_error_offset, pcre_error, rules[i].regex);
   }
+  line_re = pcre_compile(line_rule, 0, &pcre_error, &pcre_error_offset, NULL);
+  Assert(line_re, "regex line rules compilation failed at %d: %s\n%s", pcre_error_offset, pcre_error, rules[i].regex);
 }
+
+void finish_regex() {
+  pcre_free(re);
+}
+
+#define put_src_line(fmt, color, ...) \
+  do { \
+    printf(ASNI_FMT(fmt, color) \
+    "%.*s" ASNI_FMT("%.*s", ASNI_FG_YELLOW ) "%.*s\n", \
+    __VA_ARGS__, \
+    tokens[nr_token].pos, src + lines_start[tokens[nr_token].row], \
+    substr_len, substr_start, \
+    lines_start[row + 1] - lines_start[tokens[nr_token].row] - tokens[nr_token].pos - substr_len - 1, substr_start + substr_len); \
+  } while(0)
 
 static Token tokens[MAX_NR_TOKEN + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used as other, just book the finsh position.
 static int nr_token __attribute__((used))  = 0;
@@ -131,11 +148,20 @@ static bool make_token(char *src) {
 
   int pos = 0;
   int row = 0;
-  int lines[MAX_LINE] = {0};
 
   int position = 0;
   size_t len = strlen(src);
 
+  int lines_start[MAX_NR_LINE + 1];
+  int nr_line = 0;
+  lines_start[nr_line] = position;
+  while (src[lines_start[nr_line]] != '\0') {
+    Assert(nr_line < MAX_NR_LINE, "Too many lines (%d)", nr_line);
+    Assert(pcre_exec(line_re, NULL, src, (int)len, lines_start[nr_line], 0, result, 6) == 1 && result[0] == lines_start[nr_line], "count line wrong");
+    lines_start[++nr_line] = result[1];
+    printf("%.*s", lines_start[nr_line] - lines_start[nr_line - 1], src + lines_start[nr_line - 1]);
+  }
+  printf("\n");
   while (src[position] != '\0') {
     /* Try all rules one by one. */
     Assert(nr_token < MAX_NR_TOKEN, "Too many tokens.\n");
@@ -144,42 +170,29 @@ static bool make_token(char *src) {
         char *substr_start = src + position;
         int substr_len = result[1] - result[0];
 
-        /*  if match wrong number  */
-        if(rules[rule_idx].token_type == TK_ERR_DEC_INTCON) {
-          printf("Match wrong decimal number at row %d pos %d\n%.*s" ASNI_FMT("%.*s", ASNI_FG_RED) "%s\n", row, pos, pos, src + lines[row], substr_len, substr_start, strtok(src + lines[row], "\n") + substr_len);
-          return false;
-        }
-        if(rules[rule_idx].token_type == TK_ERR_OCT_INTCON) {
-          printf("Match wrong octal number at row %d pos %d\n%.*s" ASNI_FMT("%.*s", ASNI_FG_RED) "%s\n", row, pos, pos, src + lines[row], substr_len, substr_start, strtok(src + lines[row], "\n") + substr_len);
-          return false;
-        }
-        if(rules[rule_idx].token_type == TK_ERR_BIN_INTCON) {
-          printf("Match wrong binary number at row %d pos %d\n%.*s" ASNI_FMT("%.*s", ASNI_FG_RED) "%s\n", row, pos, pos, src + lines[row], substr_len, substr_start, strtok(src + lines[row], "\n") + substr_len);
-          return false;
-        }
-        if(rules[rule_idx].token_type == TK_ERR_INTCON) {
-          printf("Match wrong number at row %d pos %d\n%.*s" ASNI_FMT("%.*s", ASNI_FG_RED) "%s\n", row, pos, pos, src + lines[row], substr_len, substr_start, strtok(src + lines[row], "\n") + substr_len);
-          return false;
-        }
-
         tokens[nr_token].row = row;
         tokens[nr_token].pos = pos;
+
         position += substr_len;
 
         if (rules[rule_idx].token_type == TK_ENTER) {
-          lines[++row] = position;
+          row++;
           pos = 0;
           break;
         }
-        pos += substr_len;
-        if (rules[rule_idx].token_type == TK_NOTYPE) {
-          break;
+        else if (rules[rule_idx].token_type == TK_MNT) {
+          for (int i = 0; i < substr_len; ++i) {
+            if (substr_start[i] == '\n') {row++; pos = 0;}
+            else {pos++;}
+          }
+        }
+        else {
+          pos += substr_len;
+          if (rules[rule_idx].token_type == TK_NOTYPE) {
+            break;
+          }
         }
 
-        printf(ASNI_FMT("No.%d match rules[%d] = %s\n", ASNI_FG_BLUE) "%.*s" ASNI_FMT("%.*s", ASNI_FG_YELLOW ) "\n", nr_token, rule_idx, regex_display(rule_idx), tokens[nr_token].pos, src + lines[row], substr_len, substr_start);
-
-
-        /*  NUM  */
         switch (rules[rule_idx].token_type) {
           case TK_DEC_INTCON:
             tokens[nr_token].val = strtoul(substr_start, NULL, 10);
@@ -196,17 +209,32 @@ static bool make_token(char *src) {
             tokens[nr_token].type = rules[rule_idx].token_type;
             break;
         }
-
-        /*  str  */
         strncpy(tokens[nr_token].str, substr_start, substr_len);
 
-        nr_token++;
+        
+        if(rules[rule_idx].token_type == TK_ERR_DEC_INTCON) {
+          put_src_line("Match wrong decimal number at row %d pos %d\n", ASNI_FG_RED, tokens[nr_token].row, pos);
+        }
+        else if(rules[rule_idx].token_type == TK_ERR_OCT_INTCON) {
+          put_src_line("Match wrong octal number at row %d pos %d\n", ASNI_FG_RED, tokens[nr_token].row, pos);
+        }
+        else if(rules[rule_idx].token_type == TK_ERR_BIN_INTCON) {
+          put_src_line("Match wrong binary number at row %d pos %d\n", ASNI_FG_RED, tokens[nr_token].row, pos);
+        }
+        else if(rules[rule_idx].token_type == TK_ERR_INTCON) {
+          put_src_line("Match wrong number at row %d pos %d\n", ASNI_FG_RED, tokens[nr_token].row, pos);
+        }
+        else {
+          put_src_line("No.%d match rules[%d] %s at row %d pos %d\n", ASNI_FG_BLUE, nr_token, rule_idx, regex_display(rule_idx), tokens[nr_token].row, tokens[nr_token].pos);
+          nr_token++;
+        }
+
         break;
       }
     }
 
     if (rule_idx == NR_REGEX) {
-      printf("No match at row %d pos %d\n%s\n%*.s^\n", row, pos, strtok(src + lines[row], "\n"), pos, "");
+      printf("No match at row %d pos %d\n%s\n%*.s^\n", row, pos, strtok(src + lines_start[row], "\n"), pos, "");
       return false;
     }
   }
