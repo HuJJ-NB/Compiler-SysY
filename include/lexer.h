@@ -8,8 +8,7 @@ typedef struct token {
   char str[32];
   uint64_t val;
 
-  int row;
-  int pos;
+  int offset;
 }Token;
 
 

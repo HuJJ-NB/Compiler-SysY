@@ -1,4 +1,5 @@
 #include <compiler.h>
+#include <cstring>
 #include <lexer.h>
 #include <debug.h>
 
@@ -55,9 +56,12 @@ void compiler_init(int argc, char *argv[]) {
 
 int compile() {
   Token *tokens = NULL;
-  int len = lexer(source, &tokens);
+  int nr_token = lexer(source, &tokens);
   Assert(tokens, "error");
-  printf("%d tokens get.\n", len);
+  // printf("%s\n", source);
+  for (int i = 0; i < nr_token; ++i) {
+    printf("%d %s %.*s\n", tokens[i].offset, tokens[i].str, (int)strlen(tokens[i].str), &source[tokens[i].offset]);
+  }
   //Token *t = tokens;
   return 0;
 }
