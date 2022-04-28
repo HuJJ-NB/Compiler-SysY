@@ -12,22 +12,6 @@
 #define MAX_NR_TOKEN 70000
 #define MAX_NR_LINE 1000
 
-enum {
-  TK_NOTYPE = 256, TK_ENTER,
-  TK_HEX_INTCON, TK_DEC_INTCON, TK_OCT_INTCON, TK_BIN_INTCON,
-  TK_ERR_DEC_INTCON, TK_ERR_OCT_INTCON, TK_ERR_BIN_INTCON, TK_ERR_INTCON,
-  TK_INTCON,
-  TK_DEC_FLOATCON, TK_HEX_FLOATCON, TK_OCT_FLOATCON, TK_ERR_FLOATCON, TK_FLOATCON,
-  TK_ID,
-  TK_CONST, TK_INT, TK_FLOAT, TK_VOID, TK_IF, TK_ELSE, TK_WHILE, TK_BREAK, TK_CONTINUE, TK_RETURN,
-  TK_SNT, TK_MNT,
-  TK_ASSIGN, TK_ADD_ASSIGN, TK_SUB_ASSIGN, TK_MUL_ASSIGN, TK_DIV_ASSIGN, TK_MOD_ASSIGN,
-  TK_EQUAL, TK_NEQUAL, TK_LTE, TK_LT, TK_GTE, TK_GT,
-  TK_STR,
-
-  /* TODO: Add more token types */
-};
-
 static struct rule {
   const char *regex;
   int token_type;
@@ -39,8 +23,10 @@ static struct rule {
   {"const", TK_CONST},
   {"int", TK_INT},
   {"void", TK_VOID},
+  {"float", TK_FLOAT},
   {"if", TK_IF},
   {"else", TK_ELSE},
+  {"do", TK_DO},
   {"while", TK_WHILE},
   {"break", TK_BREAK},
   {"continue", TK_CONTINUE},
@@ -91,18 +77,7 @@ static struct rule {
   {"\\d+[A-Fa-f][\\dA-Fa-f]*", TK_ERR_DEC_INTCON},
   {"\\d+", TK_DEC_INTCON},
 };
-
-const char *regex_display(int type) {
-  switch (type) {
-  case TK_ENTER:
-    return "\\n";
-  default:
-    return rules[type].regex;
-  }
-}
-
 #define NR_REGEX ARRLEN(rules)
-
 static pcre *re[NR_REGEX];
 
 /* Rules are used for many times.
@@ -114,16 +89,25 @@ void init_regex() {
   int pcre_error_offset;
 
   for (i = 0; i < NR_REGEX; i ++) {
+    if (re[i]) {
+      printf("Rebuild rules[%d]\n", i);
+      pcre_free(re[i]);
+    }
     re[i] = pcre_compile(rules[i].regex, 0, &pcre_error, &pcre_error_offset, NULL);
     Assert(re[i], "regex rules[%d] compilation failed at %d: %s\n%s", i, pcre_error_offset, pcre_error, rules[i].regex);
   }
+  Log("Compile %d RegEx rules by PCRE Library", NR_REGEX);
 }
 
 void finish_regex() {
-  pcre_free(re);
+  int i;
+  for (i = 0; i < NR_REGEX; ++i) {
+    pcre_free(re[i]);
+  }
+  Log("Free %d RegEx rules", NR_REGEX);
 }
 
-static Token tokens[MAX_NR_TOKEN + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used as other, just book the finsh position.
+static Token tokens[MAX_NR_TOKEN + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used , just book the finsh position.
 static int nr_token __attribute__((used))  = 0;
 
 static bool make_token(char *src) {
@@ -137,13 +121,14 @@ static bool make_token(char *src) {
 
   while (src[position] != '\0') {
     /* Try all rules one by one. */
-    Assert(nr_token < MAX_NR_TOKEN, "Too many tokens.\n");
+    Assert(nr_token < MAX_NR_TOKEN, "Too many tokens");
     for (rule_idx = 0; rule_idx < NR_REGEX; rule_idx++) {
       if (pcre_exec(re[rule_idx], NULL, src, (int)len, position, 0, result, 6) == 1 && result[0] == position) {
         char *substr_start = src + position;
         int substr_len = result[1] - result[0];
 
         tokens[nr_token].offset = position;
+        tokens[nr_token].lenth =  substr_len;
         position += substr_len;
 
         int type = rules[rule_idx].token_type;
@@ -186,7 +171,7 @@ static bool make_token(char *src) {
 }
 
 int lexer(char *src, Token **tokens_p) {
-  Assert(src, "Lexer get no source, points to the zero page.");
+  Assert(src, "Lexer do not get source");
   if (make_token(src) == false) {
     *tokens_p = NULL;
     return 0;

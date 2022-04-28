@@ -29,10 +29,15 @@
 // ----------- log -----------
 
 void log_init(const char *log_file);
+void log_free();
 
 #define Log(format, ...) \
-    Log_inner(ASNI_FMT("[%s:%d %s] " format, ASNI_FG_BLUE) "\n", \
-        __FILE__, __LINE__, __func__, ## __VA_ARGS__)
+  do { \
+    printf(ASNI_FMT("[%s:%d %s] " format, ASNI_FG_BLUE) "\n", \
+        __FILE__, __LINE__, __func__, ## __VA_ARGS__); \
+    log_write("[%s:%d %s] " format "\n", \
+        __FILE__, __LINE__, __func__, ## __VA_ARGS__); \
+  } while (0)
 
 #define log_write(...) \
   do { \
@@ -43,19 +48,12 @@ void log_init(const char *log_file);
     } \
   } while (0) \
 
-#define Log_inner(...) \
-  do { \
-    printf(__VA_ARGS__); \
-    log_write(__VA_ARGS__); \
-  } while (0)
-
 // ---------- Assert ---------
 
 #define Assert(cond, format, ...) \
   do { \
     if (!(cond)) { \
-      extern FILE *log_fp; \
-      fflush(log_fp); \
+      log_write(format "\n" , ## __VA_ARGS__); \
       fflush(stdout); \
       fprintf(stderr, ASNI_FMT(format, ASNI_FG_RED) "\n", ##  __VA_ARGS__); \
       assert(cond); \

@@ -2,6 +2,9 @@
 #define __COMPILER_H__
 
 void compiler_init(int argc, char *argv[]);
-int compile();
+void compiler_free();
+
+void compile();
+void syntax();
 
 #endif

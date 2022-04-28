@@ -11,3 +11,11 @@ void log_init(const char *log_file) {
   }
   if (log_fp) Log("Log is written to %s", log_file);
 }
+
+void log_free() {
+  if (log_fp) {
+    Log("Log is finish");
+    fclose(log_fp);
+    log_fp = NULL;
+  }
+}
