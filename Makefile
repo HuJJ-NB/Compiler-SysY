@@ -10,7 +10,7 @@ LDFLAGS += $(CFLAGS_BUILD) -lpcre
 
 .PHONY: run pre
 
-ARGS := $(WORK_DIR)/resource/test.c -l $(BUILD_DIR)/log.txt
+ARGS := $(WORK_DIR)/resource/test.c -l $(BUILD_DIR)/log.txt --syntax=$(BUILD_DIR)/syntax.txt
 run:$(BINARY)
 	@echo run $(BINARY)
 	@$(BINARY) $(ARGS)

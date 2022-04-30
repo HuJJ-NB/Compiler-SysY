@@ -9,6 +9,9 @@
 static char *source = NULL;
 static size_t lenth;
 
+static FILE *syntax_fp = NULL;
+static bool is_syntax;
+
 static inline bool read_src(char *src) {
   FILE *fp = fopen(src, "r");
   Assert(fp, "Can not open '%s'", src);
@@ -21,6 +24,7 @@ static inline bool read_src(char *src) {
   if(source) {
     free(source);
     source = NULL;
+    Log("Re-load source");
   }
   source = (char *)malloc(lenth + 1 * sizeof(char));
   Assert(fread(source, sizeof(char), lenth, fp) == lenth, "Can't read all lines in source file");
@@ -38,9 +42,35 @@ static inline void free_src() {
   }
 }
 
+static inline bool open_syntax_file(char *file) {
+  if (syntax_fp) {
+    fclose(syntax_fp);
+    syntax_fp = NULL;
+    Log("Re-open syntax output file");
+  }
+  if (file) {
+    syntax_fp = fopen(file, "w");
+    Assert(syntax_fp, "Can not open syntax output file '%s'", file);
+  }
+  else {
+    syntax_fp = stdout;
+    Log("Syntax output file is not given, output to STDOUT");
+  }
+  return true;
+}
+
+static inline void close_syntax_file() {
+  if (syntax_fp) {
+    fclose(syntax_fp);
+    syntax_fp = NULL;
+    Log("Close the syntax output file");
+  }
+}
+
 static bool parse_args(int argc, char *argv[]) {
   const struct option table[] = {
     {"log"          , required_argument     , NULL, 'l'},
+    {"syntax"       , optional_argument     , NULL, 's'},
     {0              , 0                     , NULL, 0},
   };
   bool read_from_file = false;
@@ -48,7 +78,8 @@ static bool parse_args(int argc, char *argv[]) {
   while ( (o = getopt_long(argc, argv, "-l:s", table, NULL)) != -1) {
     switch (o) {
       case 'l'  : log_init(optarg); break;
-      case 1    : read_from_file = read_src(optarg); break;
+      case 's'  : is_syntax = open_syntax_file(optarg); break;
+      case 1    : if (!read_from_file) read_from_file = read_src(optarg); break;
       default:
         printf("Usage: %s [OPTION...] source [args]\n\n", argv[0]);
         printf("\t-l,--log=FILE           output log to FILE\n");
@@ -60,11 +91,16 @@ static bool parse_args(int argc, char *argv[]) {
 }
 
 void compiler_init(int argc, char *argv[]) {
+  is_syntax = false;
+  lenth = 0;
   Assert(parse_args(argc, argv), "Source file not given");
   init_regex();
 }
 
 void compiler_free() {
+  if (is_syntax) {
+    close_syntax_file();
+  }
   free_src();
   finish_regex();
   log_free();
@@ -73,53 +109,60 @@ void compiler_free() {
 static Token *tokens = NULL;
 static int nr_token;
 
-static inline int comp_lex() {
+static inline int comp_lexer() {
   nr_token = lexer(source, &tokens);
   Assert(tokens, "Lexer error");
   Log("Lexer success");
   return 0;
 }
 
-void compile() {
-  comp_lex();
-  Log("Compile success");
-  return;
+static inline void comp_syntax() {
+  Log("Syntax output");
+  if (nr_token == 0) {
+    fprintf(syntax_fp, "%s", source);
+  }
+  else {
+    fprintf(syntax_fp, "%.*s", tokens[0].offset, source);
+    for (int i = 0; i < nr_token; ++i) {
+      const char *color;
+      switch (tokens[i].type) {
+      case TK_INT: case TK_VOID: case TK_FLOAT:
+        color = ASNI_FG_MAGENTA;
+        break;
+      case TK_CONST:
+      case TK_IF: case TK_ELSE:
+      case TK_DO: case TK_WHILE: case TK_BREAK: case TK_CONTINUE:
+      case TK_RETURN:
+        color = ASNI_FG_BLUE;
+        break;
+      case TK_INTCON:
+        color = ASNI_FG_YELLOW;
+        break;
+      case TK_ID:
+        color = ASNI_FG_GREEN;
+        break;
+      case TK_MNT: case TK_SNT:
+        color = ASNI_FG_BLACK;
+        break;
+      case TK_ERR_BIN_INTCON: case TK_ERR_DEC_INTCON: case TK_ERR_OCT_INTCON: case TK_ERR_INTCON:
+      case TK_ERR_FLOATCON:
+        color = ASNI_FG_RED;
+        break;
+      default:
+        color = ASNI_FG_WHITE;
+        break;
+      }
+      fprintf(syntax_fp, ASNI_FMT( "%s" , "%s") "%.*s", color, tokens[i].str, tokens[i + 1].offset - tokens[i].offset - tokens[i].lenth, source + tokens[i].offset + tokens[i].lenth);
+    }
+  }
+  if (lenth == 0 || source[lenth - 1] != '\n') fprintf(syntax_fp, "\n");
 }
 
-void syntax() {
-  comp_lex();
-
-  for (int i = 0; i < nr_token; ++i) {
-    const char *color;
-    switch (tokens[i].type) {
-    case TK_INT: case TK_VOID: case TK_FLOAT:
-      color = ASNI_FG_MAGENTA;
-      break;
-    case TK_CONST:
-    case TK_IF: case TK_ELSE:
-    case TK_DO: case TK_WHILE: case TK_BREAK: case TK_CONTINUE:
-    case TK_RETURN:
-      color = ASNI_FG_BLUE;
-      break;
-    case TK_INTCON:
-      color = ASNI_FG_YELLOW;
-      break;
-    case TK_ID:
-      color = ASNI_FG_GREEN;
-      break;
-    case TK_MNT: case TK_SNT:
-      color = ASNI_FG_BLACK;
-      break;
-    case TK_ERR_BIN_INTCON: case TK_ERR_DEC_INTCON: case TK_ERR_OCT_INTCON: case TK_ERR_INTCON:
-    case TK_ERR_FLOATCON:
-      color = ASNI_FG_RED;
-      break;
-    default:
-      color = ASNI_FG_WHITE;
-      break;
-    }
-    printf(ASNI_FMT( "%s%.*s" , "%s"), color, tokens[i].str, tokens[i + 1].offset - tokens[i].offset - tokens[i].lenth, source + tokens[i].offset + tokens[i].lenth);
+void compile() {
+  comp_lexer();
+  if (is_syntax) {
+    comp_syntax();
   }
-  if (source[lenth - 1] != '\n') printf("\n");
-  Log("Syntax output");
+  Log("Compile success");
+  return;
 }
