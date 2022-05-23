@@ -150,6 +150,7 @@ static Token *make_one_token(bool *is_EOF) {
         case TK_OCT_INTCON:
           tokens[nr_token].val = strtoul(substr_start, NULL, 8);
           tokens[nr_token].type = TK_INTCON;
+          break;
         default: 
           tokens[nr_token].type = type;
           break;
