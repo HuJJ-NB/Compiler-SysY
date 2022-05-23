@@ -12,6 +12,7 @@ typedef struct token {
   int lenth;
 }Token;
 
+/* do lexer_init before this, and lexer_free when all finished. */
 /* make tokens by string `src` and return the point to the token in an array */
 /* such as */
 /* `Token *tokens;` */
@@ -27,10 +28,9 @@ typedef struct token {
 /* Do not free `tokens` */
 Token *make_token(char *src, bool *is_EOF);
 
-/* do this before use lexer */
-void init_regex();
+void lexer_init();
 
-void finish_regex();
+void lexer_free();
 
 enum type {
   TK_NOTYPE = 256, TK_ENTER,

@@ -83,7 +83,7 @@ static pcre *re[NR_REGEX];
 /* Rules are used for many times.
  * Therefore we compile them only once before any usage.
  */
-void init_regex() {
+void lexer_init() {
   int i;
   const char *pcre_error;
   int pcre_error_offset;
@@ -99,7 +99,7 @@ void init_regex() {
   Log("Compile %d RegEx rules by PCRE Library", NR_REGEX);
 }
 
-void finish_regex() {
+void lexer_free() {
   int i;
   for (i = 0; i < NR_REGEX; ++i) {
     pcre_free(re[i]);

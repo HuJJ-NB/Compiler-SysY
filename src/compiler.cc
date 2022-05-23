@@ -119,7 +119,7 @@ void compiler_init(int argc, char *argv[]) {
   is_syntax = false;
   lenth = 0;
   Assert(parse_args(argc, argv), "Source file not given");
-  init_regex();
+  lexer_init();
 }
 
 void compiler_free() {
@@ -127,7 +127,7 @@ void compiler_free() {
     close_syntax_file();
   }
   free_src();
-  finish_regex();
+  lexer_free();
   log_free();
 }
 
