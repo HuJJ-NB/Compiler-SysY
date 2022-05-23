@@ -107,77 +107,74 @@ void finish_regex() {
   Log("Free %d RegEx rules", NR_REGEX);
 }
 
+static char *src_inner = NULL;
+static size_t src_len;
+static int position;
 static Token tokens[MAX_NR_TOKEN + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used , just book the finsh position.
 static int nr_token __attribute__((used))  = 0;
 
-static bool make_token(char *src) {
+static Token *make_one_token(bool *is_EOF) {
+  if (src_inner[position] == '\0') {
+    *is_EOF = true;
+    return NULL;
+  }
   int rule_idx;
   int result[6];
 
-  nr_token = 0;
+  /* Try all rules one by one. */
+  Assert(nr_token < MAX_NR_TOKEN, "Too many tokens");
+  for (rule_idx = 0; rule_idx < NR_REGEX; ++rule_idx) {
+    if (pcre_exec(re[rule_idx], NULL, src_inner, (int)src_len, position, 0, result, 6) == 1 && result[0] == position) {
+      char *substr_start = src_inner + position;
+      int substr_len = result[1] - result[0];
 
-  int position = 0;
-  size_t len = strlen(src);
+      tokens[nr_token].offset = position;
+      tokens[nr_token].lenth =  substr_len;
+      position += substr_len;
 
-  while (src[position] != '\0') {
-    /* Try all rules one by one. */
-    Assert(nr_token < MAX_NR_TOKEN, "Too many tokens");
-    for (rule_idx = 0; rule_idx < NR_REGEX; rule_idx++) {
-      if (pcre_exec(re[rule_idx], NULL, src, (int)len, position, 0, result, 6) == 1 && result[0] == position) {
-        char *substr_start = src + position;
-        int substr_len = result[1] - result[0];
+      int type = rules[rule_idx].token_type;
 
-        tokens[nr_token].offset = position;
-        tokens[nr_token].lenth =  substr_len;
-        position += substr_len;
-
-        int type = rules[rule_idx].token_type;
-
-        if(type == TK_NOTYPE) {
-          break;
-        }
-
-        switch (type) {
-          case TK_DEC_INTCON:
-            tokens[nr_token].val = strtoul(substr_start, NULL, 10);
-            tokens[nr_token].type = TK_INTCON;
-            break;
-          case TK_HEX_INTCON:
-            tokens[nr_token].val = strtoul(substr_start, NULL, 16);
-            tokens[nr_token].type = TK_INTCON;
-            break;
-          case TK_OCT_INTCON:
-            tokens[nr_token].val = strtoul(substr_start, NULL, 8);
-            tokens[nr_token].type = TK_INTCON;
-          default: 
-            tokens[nr_token].type = type;
-            break;
-        }
-        strncpy(tokens[nr_token].str, substr_start, substr_len);
-
-        nr_token++;
-        break;
+      if(type == TK_NOTYPE) {
+        return NULL;
       }
-    }
 
-    if (rule_idx == NR_REGEX) {
-      printf("No match at %d\n", position);
-      printf("%d %d\n", nr_token, tokens[nr_token].offset);
-      return false;
+      switch (type) {
+        case TK_DEC_INTCON:
+          tokens[nr_token].val = strtoul(substr_start, NULL, 10);
+          tokens[nr_token].type = TK_INTCON;
+          break;
+        case TK_HEX_INTCON:
+          tokens[nr_token].val = strtoul(substr_start, NULL, 16);
+          tokens[nr_token].type = TK_INTCON;
+          break;
+        case TK_OCT_INTCON:
+          tokens[nr_token].val = strtoul(substr_start, NULL, 8);
+          tokens[nr_token].type = TK_INTCON;
+        default: 
+          tokens[nr_token].type = type;
+          break;
+      }
+      strncpy(tokens[nr_token].str, substr_start, substr_len);
+
+      nr_token++;
+      break;
     }
   }
-  tokens[nr_token].offset = position;
-  return true;
+
+  if (rule_idx == NR_REGEX) {
+    printf("No match at %d\n", position);
+    printf("%d %d\n", nr_token, tokens[nr_token].offset);
+    return NULL;
+  }
+  return tokens + nr_token - 1;
 }
 
-int lexer(char *src, Token **tokens_p) {
-  Assert(src, "Lexer do not get source");
-  if (make_token(src) == false) {
-    *tokens_p = NULL;
-    return 0;
+Token *make_token(char *src, bool *is_EOF) {
+  if (src != NULL) {
+    nr_token = 0;
+    src_len = strlen(src);
+    src_inner = src;
   }
-  else {
-    *tokens_p = tokens;
-    return nr_token;
-  }
+
+  return make_one_token(is_EOF);
 }

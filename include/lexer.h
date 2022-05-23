@@ -12,15 +12,20 @@ typedef struct token {
   int lenth;
 }Token;
 
+/* make tokens by string `src` and return the point to the token in an array */
 /* such as */
-/* `char expr[] = "int a;";`*/
-/* `Token *tokens_p;` */
-/* `int N = lexer(expr, &tokens_p);` */
-/* make tokens by string `expr` and store in a array */
-/* `tokens_p` point to the array */
-/* `tokens[0]` to `tokens[N-1]` is koken and `tokens[N]` is just book the finish row and position. */
-/* Do not free `tokens_p` */
-int lexer(char *src, Token **tokens_p);
+/* `Token *tokens;` */
+/* `bool is_EOF = false;` */
+/* `tokens = make_token(source, &is_EOF);` */
+/* `if (tokens != NULL) ++nr_token;` */
+/* `do{` */
+/* `Token *t = make_token(NULL, &is_EOF);` */
+/* `if (tokens == NULL && t != NULL) tokens = t;` */
+/* `if (t != NULL) ++nr_token;` */
+/* `}while (!is_EOF);` */
+/* `tokens` point to the array */
+/* Do not free `tokens` */
+Token *make_token(char *src, bool *is_EOF);
 
 /* do this before use lexer */
 void init_regex();
