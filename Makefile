@@ -10,10 +10,13 @@ LDFLAGS += $(CFLAGS_BUILD) -lpcre
 
 .PHONY: run pre
 
-ARGS := $(WORK_DIR)/resource/test.c -l $(BUILD_DIR)/log.txt --syntax=$(BUILD_DIR)/syntax.txt
+LOG_FILE := $(BUILD_DIR)/log.txt
+SYNTAX_FILE := $(BUILD_DIR)/syntax.txt
+ARGS := $(WORK_DIR)/resource/test.c -l $(LOG_FILE) --syntax=$(SYNTAX_FILE)
 run:$(BINARY)
 	@echo run $(BINARY)
 	@$(BINARY) $(ARGS)
+	@cat $(SYNTAX_FILE)
 
 # vs code clangd use compile_commands.json to work
 pre:

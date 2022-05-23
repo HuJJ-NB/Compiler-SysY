@@ -184,7 +184,7 @@ static inline void comp_syntax() {
       color = ASNI_FG_WHITE;
       break;
     }
-    fprintf(syntax_fp, ASNI_FMT( "%s" , "%s") "%.*s", color, tokens[i].str, (i < nr_token - 1 ? tokens[i + 1].offset : (int)strlen(source)) - tokens[i].offset - tokens[i].lenth, source + tokens[i].offset + tokens[i].lenth);
+    fprintf(syntax_fp, ASNI_FMT( "%s" , "%s") "(%d)%.*s", color, tokens[i].str, tokens[i].type, (i < nr_token - 1 ? tokens[i + 1].offset : (int)strlen(source)) - tokens[i].offset - tokens[i].lenth, source + tokens[i].offset + tokens[i].lenth);
   }
 }
 
