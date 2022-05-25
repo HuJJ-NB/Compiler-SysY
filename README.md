@@ -31,8 +31,7 @@ SysY 语言的文法采用扩展的 Backus 范式表示，其中：
 
 SysY 语言的文法表示如下，其中 **`CompUnit`为开始符号**：
 
-1. 编译单元 **CompUnit** → [ CompUnit ] ( Decl | FuncDef )
-1. 声明 **Decl** → ConstDecl | VarDecl
+1. 编译单元 **CompUnit** → { ConstDecl | VarDecl | FuncDef }
 1. 常量声明 **ConstDecl** → 'const' BType ConstDef { ',' ConstDef } ';'
 1. 基本类型 **BType** → 'int'
 1. 常数定义 **ConstDef** → Ident { '[' ConstExp ']' } '=' ConstInitVal
@@ -45,7 +44,7 @@ SysY 语言的文法表示如下，其中 **`CompUnit`为开始符号**：
 1. 函数形参表 **FuncFParams** → FuncFParam { ',' FuncFParam }
 1. 函数形参 **FuncFParam** → BType Ident [ '[' ']' { '[' ConstExp ']' } ]
 1. 语句块 **Block** → '{' { BlockItem } '}'
-1. 语句块项 **BlockItem** → Decl | Stmt
+1. 语句块项 **BlockItem** → ConstDecl | VarDecl | Stmt
 1. 语句
 **Stmt** → LVal '=' Exp ';'
 | [Exp] ';'
