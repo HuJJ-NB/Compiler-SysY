@@ -2,7 +2,7 @@
 *
 !*/
 !Makefile
-!README.md
+!*.md
 !LICENSE
 !Makefile
 !.gitignore
