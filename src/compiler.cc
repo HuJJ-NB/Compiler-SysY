@@ -115,11 +115,19 @@ static bool parse_args(int argc, char *argv[]) {
   return read_from_file;
 }
 
+bool print_line(int line_no) {
+  Line line_info = get_line_info(line_no);
+  if (line_info.line_end < line_info.line_start) return false;
+
+  printf("%.*s", line_info.line_end - line_info.line_start, source + line_info.line_start);
+  return true;
+}
+
 void compiler_init(int argc, char *argv[]) {
   is_syntax = false;
   lenth = 0;
   Assert(parse_args(argc, argv), "Source file not given");
-  lexer_init();
+  lexer_init(source);
 }
 
 void compiler_free() {
@@ -132,67 +140,56 @@ void compiler_free() {
 }
 
 static Token *tokens = NULL;
-static int nr_token;
 
-static inline int comp_lexer() {
+static inline void comp_lexer() {
+  Log("Syntax output");
   bool is_EOF = false;
-  tokens = make_token(source, &is_EOF);
-  if (tokens != NULL) ++nr_token;
+  int last_token_end = 0;
   do{
-    Token *t = make_token(NULL, &is_EOF);
-    if (tokens == NULL && t != NULL) tokens = t;
-    if (t != NULL) ++nr_token;
+    Token *t = make_token(&is_EOF);
+    if (t == NULL) continue;
+    if (tokens == NULL) tokens = t;
+    if (is_syntax) {
+      const char *color;
+      switch (t->type) {
+      case TK_INT: case TK_VOID:
+        color = ASNI_FG_MAGENTA;
+        break;
+      case TK_CONST:
+      case TK_IF: case TK_ELSE:
+      case TK_DO: case TK_WHILE: case TK_BREAK: case TK_CONTINUE:
+      case TK_RETURN:
+        color = ASNI_FG_BLUE;
+        break;
+      case TK_INTCON:
+        color = ASNI_FG_YELLOW;
+        break;
+      case TK_ID:
+        color = ASNI_FG_GREEN;
+        break;
+      case TK_MNT: case TK_SNT:
+        color = ASNI_FG_BLACK;
+        break;
+      case TK_ERR_BIN_INTCON: case TK_ERR_DEC_INTCON: case TK_ERR_OCT_INTCON: case TK_ERR_INTCON:
+        color = ASNI_FG_RED;
+        break;
+      default:
+        color = ASNI_FG_WHITE;
+        break;
+      }
+      fprintf(syntax_fp, "%.*s" ASNI_FMT( "%.*s" , "%s" ), t->offset - last_token_end, source + last_token_end, color, t->lenth, t->str);
+      last_token_end = t->offset + t->lenth;
+    }
   }while (!is_EOF);
+  if (is_syntax) {
+    fprintf(syntax_fp, "%s", source + last_token_end);
+  }
   Assert(tokens, "Lexer error");
   Log("Lexer success");
-  return 0;
-}
-
-static inline void comp_syntax() {
-  Log("Syntax output");
-  if (nr_token == 0) {
-    fprintf(syntax_fp, "%s", source);
-    return;
-  }
-  fprintf(syntax_fp, "%.*s", tokens[0].offset, source);
-  for (int i = 0; i < nr_token; ++i) {
-    const char *color;
-    switch (tokens[i].type) {
-    case TK_INT: case TK_VOID: case TK_FLOAT:
-      color = ASNI_FG_MAGENTA;
-      break;
-    case TK_CONST:
-    case TK_IF: case TK_ELSE:
-    case TK_DO: case TK_WHILE: case TK_BREAK: case TK_CONTINUE:
-    case TK_RETURN:
-      color = ASNI_FG_BLUE;
-      break;
-    case TK_INTCON:
-      color = ASNI_FG_YELLOW;
-      break;
-    case TK_ID:
-      color = ASNI_FG_GREEN;
-      break;
-    case TK_MNT: case TK_SNT:
-      color = ASNI_FG_BLACK;
-      break;
-    case TK_ERR_BIN_INTCON: case TK_ERR_DEC_INTCON: case TK_ERR_OCT_INTCON: case TK_ERR_INTCON:
-    case TK_ERR_FLOATCON:
-      color = ASNI_FG_RED;
-      break;
-    default:
-      color = ASNI_FG_WHITE;
-      break;
-    }
-    fprintf(syntax_fp, ASNI_FMT( "%s" , "%s") "(%d)%.*s", color, tokens[i].str, tokens[i].type, (i < nr_token - 1 ? tokens[i + 1].offset : (int)strlen(source)) - tokens[i].offset - tokens[i].lenth, source + tokens[i].offset + tokens[i].lenth);
-  }
 }
 
 void compile() {
   comp_lexer();
-  if (is_syntax) {
-    comp_syntax();
-  }
   Log("Compile success");
   return;
 }

@@ -10,7 +10,7 @@
 
 #define ARRLEN(arr) (int)(sizeof(arr) / sizeof(arr[0]))
 #define MAX_NR_TOKEN 70000
-#define MAX_NR_LINE 1000
+#define MAX_NR_LINE 20000
 
 static struct rule {
   const char *regex;
@@ -19,30 +19,19 @@ static struct rule {
   /* TODO: Add more rules.
    * Pay attention to the precedence level of different rules.
    */
-  {"\\s+", TK_NOTYPE},    // spaces
-  {"const", TK_CONST},
-  {"int", TK_INT},
-  {"void", TK_VOID},
-  {"float", TK_FLOAT},
-  {"if", TK_IF},
-  {"else", TK_ELSE},
-  {"do", TK_DO},
-  {"while", TK_WHILE},
-  {"break", TK_BREAK},
-  {"continue", TK_CONTINUE},
-  {"return", TK_RETURN},
-  {"[a-zA-Z]\\w*", TK_ID},
+  {"\\s+", TK_NOTYPE},
+  {";", ';'},
+  {",", ','},
   {"\\{", '{'},
   {"\\}", '}'},
   {"\\[", '['},
   {"\\]", ']'},
   {"\\(", '('},
   {"\\)", ')'},
-  {";", ';'},
-  {",", ','},
+
   {"//.*", TK_SNT},
   {"/\\*[\\s\\S]*?\\*/", TK_MNT},
-  {"\".*?\"", TK_STR},
+
   {"==", TK_EQUAL},
   {"!=", TK_NEQUAL},
   {"<=", TK_LTE},
@@ -63,8 +52,31 @@ static struct rule {
   {"\\*", '*'},
   {"/", '/'},
   {"%", '%'},
-  // {"true", 'T'},
-  // {"false", 'F'},
+
+  {"\".*?\"", TK_STR},
+
+  {"const\\w+", TK_ID},
+  {"const", TK_CONST},
+  {"int\\w+", TK_ID},
+  {"int", TK_INT},
+  {"void\\w+", TK_ID},
+  {"void", TK_VOID},
+  {"if\\w+", TK_ID},
+  {"if", TK_IF},
+  {"else\\w+", TK_ID},
+  {"else", TK_ELSE},
+  {"do\\w+", TK_ID},
+  {"do", TK_DO},
+  {"while\\w+", TK_ID},
+  {"while", TK_WHILE},
+  {"break\\w+", TK_ID},
+  {"break", TK_BREAK},
+  {"continue\\w+", TK_ID},
+  {"continue", TK_CONTINUE},
+  {"return\\w+", TK_ID},
+  {"return", TK_RETURN},
+  {"[_a-zA-Z]\\w*", TK_ID},
+
   {"0[xX][\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
   {"0[xX][\\dA-Fa-f]+", TK_HEX_INTCON},
   {"0[bB][\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
@@ -72,18 +84,26 @@ static struct rule {
   {"0[bB][01]+", TK_BIN_INTCON},
   {"0[\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
   {"0[0-7]*[8-9A-Fa-f][\\dA-Fa-f]*", TK_ERR_OCT_INTCON},
-  {"0[0-7]+", TK_OCT_INTCON},
+  {"0[0-7]*", TK_OCT_INTCON},
   {"[\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
-  {"\\d+[A-Fa-f][\\dA-Fa-f]*", TK_ERR_DEC_INTCON},
-  {"\\d+", TK_DEC_INTCON},
+  {"[1-9]\\d*[A-Fa-f][\\dA-Fa-f]*", TK_ERR_DEC_INTCON},
+  {"[1-9]\\d*", TK_DEC_INTCON},
 };
 #define NR_REGEX ARRLEN(rules)
 static pcre *re[NR_REGEX];
 
+static char *src_inner = NULL;
+static size_t src_len;
+static int position;
+static Token tokens[MAX_NR_TOKEN + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used , just book the finsh position.
+static int nr_token __attribute__((used))  = 0;
+static Line lines[MAX_NR_LINE + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used , just book the finsh position.
+static int nr_line __attribute__((used))  = 0;
+
 /* Rules are used for many times.
  * Therefore we compile them only once before any usage.
  */
-void lexer_init() {
+void lexer_init(char *src) {
   int i;
   const char *pcre_error;
   int pcre_error_offset;
@@ -97,6 +117,11 @@ void lexer_init() {
     Assert(re[i], "regex rules[%d] compilation failed at %d: %s\n%s", i, pcre_error_offset, pcre_error, rules[i].regex);
   }
   Log("Compile %d RegEx rules by PCRE Library", NR_REGEX);
+
+  nr_token = 0;
+  src_len = strlen(src);
+  src_inner = src;
+  nr_line = 0;
 }
 
 void lexer_free() {
@@ -107,13 +132,12 @@ void lexer_free() {
   Log("Free %d RegEx rules", NR_REGEX);
 }
 
-static char *src_inner = NULL;
-static size_t src_len;
-static int position;
-static Token tokens[MAX_NR_TOKEN + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used , just book the finsh position.
-static int nr_token __attribute__((used))  = 0;
+Line get_line_info(int line_no) {
+  if (line_no >= nr_line) return Line{0, -1};
+  return lines[line_no];
+}
 
-static Token *make_one_token(bool *is_EOF) {
+Token *make_token(bool *is_EOF) {
   if (src_inner[position] == '\0') {
     *is_EOF = true;
     return NULL;
@@ -128,15 +152,35 @@ static Token *make_one_token(bool *is_EOF) {
       char *substr_start = src_inner + position;
       int substr_len = result[1] - result[0];
 
-      tokens[nr_token].offset = position;
-      tokens[nr_token].lenth =  substr_len;
-      position += substr_len;
-
       int type = rules[rule_idx].token_type;
 
       if(type == TK_NOTYPE) {
+        for(int i = 0; i < substr_len; ++i) {
+          if (substr_start[i] == '\n') {
+            lines[nr_line].line_end = position + i;
+            nr_line += 1;
+            lines[nr_line].line_start = position + i + 1;
+          }
+        }
+        position += substr_len;
         return NULL;
       }
+
+      tokens[nr_token].line_no = nr_line;
+
+      if (type == TK_MNT) {
+        for(int i = 0; i < substr_len; ++i) {
+          if (substr_start[i] == '\n') {
+            lines[nr_line].line_end = position + i;
+            nr_line += 1;
+            lines[nr_line].line_start = position + i + 1;
+          }
+        }
+      }
+
+      tokens[nr_token].offset = position;
+      tokens[nr_token].lenth = substr_len;
+      position += substr_len;
 
       switch (type) {
         case TK_DEC_INTCON:
@@ -151,7 +195,7 @@ static Token *make_one_token(bool *is_EOF) {
           tokens[nr_token].val = strtoul(substr_start, NULL, 8);
           tokens[nr_token].type = TK_INTCON;
           break;
-        default: 
+        default:
           tokens[nr_token].type = type;
           break;
       }
@@ -168,14 +212,4 @@ static Token *make_one_token(bool *is_EOF) {
     return NULL;
   }
   return tokens + nr_token - 1;
-}
-
-Token *make_token(char *src, bool *is_EOF) {
-  if (src != NULL) {
-    nr_token = 0;
-    src_len = strlen(src);
-    src_inner = src;
-  }
-
-  return make_one_token(is_EOF);
 }
