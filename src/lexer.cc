@@ -2,11 +2,12 @@
  * Type 'man regex' for more information about POSIX regex functions.
  */
 #include <lexer.h>
-#include <debug.h>
 
 #include <pcre.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #define ARRLEN(arr) (int)(sizeof(arr) / sizeof(arr[0]))
 #define MAX_NR_TOKEN 70000
@@ -55,26 +56,6 @@ static struct rule {
 
   {"\".*?\"", TK_STR},
 
-  {"const\\w+", TK_ID},
-  {"const", TK_CONST},
-  {"int\\w+", TK_ID},
-  {"int", TK_INT},
-  {"void\\w+", TK_ID},
-  {"void", TK_VOID},
-  {"if\\w+", TK_ID},
-  {"if", TK_IF},
-  {"else\\w+", TK_ID},
-  {"else", TK_ELSE},
-  {"do\\w+", TK_ID},
-  {"do", TK_DO},
-  {"while\\w+", TK_ID},
-  {"while", TK_WHILE},
-  {"break\\w+", TK_ID},
-  {"break", TK_BREAK},
-  {"continue\\w+", TK_ID},
-  {"continue", TK_CONTINUE},
-  {"return\\w+", TK_ID},
-  {"return", TK_RETURN},
   {"[_a-zA-Z]\\w*", TK_ID},
 
   {"0[xX][\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
@@ -114,9 +95,8 @@ void lexer_init(char *src) {
       pcre_free(re[i]);
     }
     re[i] = pcre_compile(rules[i].regex, 0, &pcre_error, &pcre_error_offset, NULL);
-    Assert(re[i], "regex rules[%d] compilation failed at %d: %s\n%s", i, pcre_error_offset, pcre_error, rules[i].regex);
+    assert(re[i]);
   }
-  Log("Compile %d RegEx rules by PCRE Library", NR_REGEX);
 
   nr_token = 0;
   src_len = strlen(src);
@@ -129,7 +109,6 @@ void lexer_free() {
   for (i = 0; i < NR_REGEX; ++i) {
     pcre_free(re[i]);
   }
-  Log("Free %d RegEx rules", NR_REGEX);
 }
 
 Line get_line_info(int line_no) {
@@ -146,7 +125,7 @@ Token *make_token(bool *is_EOF) {
   int result[6];
 
   /* Try all rules one by one. */
-  Assert(nr_token < MAX_NR_TOKEN, "Too many tokens");
+  assert(nr_token < MAX_NR_TOKEN);
   for (rule_idx = 0; rule_idx < NR_REGEX; ++rule_idx) {
     if (pcre_exec(re[rule_idx], NULL, src_inner, (int)src_len, position, 0, result, 6) == 1 && result[0] == position) {
       char *substr_start = src_inner + position;
@@ -201,7 +180,66 @@ Token *make_token(bool *is_EOF) {
       }
       strncpy(tokens[nr_token].str, substr_start, substr_len);
 
+      if (tokens[nr_token].type == TK_ID) {
+          if (strncmp(tokens[nr_token].str, "const", substr_len) == 0) {
+            tokens[nr_token].type = TK_CONST;
+          }
+          else if (strncmp(tokens[nr_token].str, "int", substr_len) == 0) {
+            tokens[nr_token].type = TK_INT;
+          }
+          else if (strncmp(tokens[nr_token].str, "void", substr_len) == 0) {
+            tokens[nr_token].type = TK_VOID;
+          }
+          else if (strncmp(tokens[nr_token].str, "if", substr_len) == 0) {
+            tokens[nr_token].type = TK_IF;
+          }
+          else if (strncmp(tokens[nr_token].str, "else", substr_len) == 0) {
+            tokens[nr_token].type = TK_ELSE;
+          }
+          else if (strncmp(tokens[nr_token].str, "while", substr_len) == 0) {
+            tokens[nr_token].type = TK_WHILE;
+          }
+          else if (strncmp(tokens[nr_token].str, "do", substr_len) == 0) {
+            tokens[nr_token].type = TK_DO;
+          }
+          else if (strncmp(tokens[nr_token].str, "break", substr_len) == 0) {
+            tokens[nr_token].type = TK_BREAK;
+          }
+          else if (strncmp(tokens[nr_token].str, "continue", substr_len) == 0) {
+            tokens[nr_token].type = TK_CONTINUE;
+          }
+          else if (strncmp(tokens[nr_token].str, "return", substr_len) == 0) {
+            tokens[nr_token].type = TK_RETURN;
+          }
+      }
+
       nr_token++;
+      if (nr_token < 2 || tokens[nr_token - 1].line_no > tokens[nr_token - 2].line_no) {
+        printf("\nLINE.%d\n", tokens[nr_token - 1].line_no);
+      }
+      else printf("---\n");
+
+      switch (tokens[nr_token - 1].type) {
+        case TK_ERR_BIN_INTCON: case TK_ERR_DEC_INTCON: case TK_ERR_OCT_INTCON:
+        case TK_ERR_INTCON: printf("ERR_INTCON\n"); break;
+        case TK_INTCON: printf("INTCON %lu\n", tokens[nr_token - 1].val); break;
+        case TK_BREAK: printf("KEY BREAK\n"); break;
+        case TK_RETURN: printf("KEY RETURN\n"); break;
+        case TK_IF: printf("KEY IF\n"); break;
+        case TK_ELSE: printf("KEY ELSE\n"); break;
+        case TK_DO: printf("KEY DO\n"); break;
+        case TK_WHILE: printf("KEY WHILE\n"); break;
+        case TK_CONTINUE: printf("KEY CONTINUE\n"); break;
+        case TK_VOID: printf("KEY VOID\n"); break;
+        case TK_INT: printf("KEY INT\n"); break;
+        case TK_CONST: printf("KEY CONST\n"); break;
+        case TK_ID: printf("ID\n"); break;
+        case TK_MNT: printf("Multi-line NT\n"); break;
+        case TK_SNT: printf("Single-line NT\n"); break;
+        case TK_STR: printf("STRING\n"); break;
+        default: printf("SIGN\n"); break;
+      }
+      printf("\"%.*s\"\n", tokens[nr_token - 1].lenth, tokens[nr_token-1].str);
       break;
     }
   }
