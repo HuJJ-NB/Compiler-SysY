@@ -19,16 +19,14 @@ typedef struct token {
 }Token;
 
 /* do lexer_init before this, and lexer_free when all finished. */
-/* make tokens by string `src` and return the point to the token in an array */
+/* make tokens and return the point to the token in an array */
 /* such as */
 /* `Token *tokens;` */
 /* `bool is_EOF = false;` */
-/* `tokens = make_token(source, &is_EOF);` */
-/* `if (tokens != NULL) ++nr_token;` */
 /* `do{` */
-/* `Token *t = make_token(NULL, &is_EOF);` */
-/* `if (tokens == NULL && t != NULL) tokens = t;` */
-/* `if (t != NULL) ++nr_token;` */
+/* `Token *t = make_token(&is_EOF);` */
+/* `if (t == NULL) continue;` */
+/* `if (tokens == NULL) tokens = t;` */
 /* `}while (!is_EOF);` */
 /* `tokens` point to the array */
 /* Do not free `tokens` */
@@ -51,6 +49,7 @@ enum type {
   TK_ASSIGN, TK_ADD_ASSIGN, TK_SUB_ASSIGN, TK_MUL_ASSIGN, TK_DIV_ASSIGN, TK_MOD_ASSIGN,
   TK_EQUAL, TK_NEQUAL, TK_LTE, TK_LT, TK_GTE, TK_GT,
   TK_STR,
+  TK_EOF,
 
   /* TODO: Add more token types */
 };

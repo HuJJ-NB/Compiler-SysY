@@ -1,5 +1,6 @@
 #include <compiler.h>
 #include <lexer.h>
+#include <syntax.h>
 #include <debug.h>
 
 #include <stdlib.h>
@@ -9,8 +10,8 @@
 static char *source = NULL;
 static size_t lenth;
 
-static FILE *syntax_fp = NULL;
-static bool is_syntax;
+static FILE *highlight_fp = NULL;
+static bool is_highlight;
 
 static inline bool read_src(char *src) {
   FILE *fp = fopen(src, "r");
@@ -43,35 +44,35 @@ static inline void free_src() {
   }
 }
 
-static inline bool open_syntax_file(char *file) {
-  if (syntax_fp) {
-    fclose(syntax_fp);
-    syntax_fp = NULL;
-    Log("Re-open syntax output file");
+static inline bool open_highlight_file(char *file) {
+  if (highlight_fp) {
+    fclose(highlight_fp);
+    highlight_fp = NULL;
+    Log("Re-open highlight output file");
   }
   if (file) {
-    syntax_fp = fopen(file, "w");
-    Assert(syntax_fp, "Can not open syntax output file '%s'", file);
+    highlight_fp = fopen(file, "w");
+    Assert(highlight_fp, "Can not open highlight output file '%s'", file);
   }
   else {
-    syntax_fp = stdout;
-    Log("Syntax output file is not given, output to STDOUT");
+    highlight_fp = stdout;
+    Log("highlight output file is not given, output to STDOUT");
   }
   return true;
 }
 
-static inline void close_syntax_file() {
-  if (syntax_fp) {
-    fclose(syntax_fp);
-    syntax_fp = NULL;
-    Log("Close the syntax output file");
+static inline void close_highlight_file() {
+  if (highlight_fp) {
+    fclose(highlight_fp);
+    highlight_fp = NULL;
+    Log("Close the highlight output file");
   }
 }
 
-static bool parse_args(int argc, char *argv[]) {
+static inline bool parse_args(int argc, char *argv[]) {
   const struct option table[] = {
     {"log"          , required_argument     , NULL, 'l'},
-    {"syntax"       , required_argument     , NULL, 's'},
+    {"highlight"       , required_argument     , NULL, 'h'},
     {0              , 0                     , NULL, 0},
   };
   struct {
@@ -82,8 +83,8 @@ static bool parse_args(int argc, char *argv[]) {
       "-l,--log=FILE",
       "output log to FILE"
     },{
-      "-s,--syntax=FILE",
-      "output syntax to FILE"
+      "-h,--highlight=FILE",
+      "output highlight to FILE"
     }
   };
 
@@ -98,10 +99,10 @@ static bool parse_args(int argc, char *argv[]) {
 
   bool read_from_file = false;
   int o;
-  while ( (o = getopt_long(argc, argv, "-l:s:", table, NULL)) != -1) {
+  while ( (o = getopt_long(argc, argv, "-l:h:", table, NULL)) != -1) {
     switch (o) {
       case 'l'  : log_init(optarg); break;
-      case 's'  : is_syntax = open_syntax_file(optarg); break;
+      case 'h'  : is_highlight = open_highlight_file(optarg); break;
       case 1    : if (!read_from_file) read_from_file = read_src(optarg); break;
       default:
         printf("Usage: %s [OPTION...] source [args]\n\n", argv[0]);
@@ -115,81 +116,23 @@ static bool parse_args(int argc, char *argv[]) {
   return read_from_file;
 }
 
-bool print_line(int line_no) {
-  Line line_info = get_line_info(line_no);
-  if (line_info.line_end < line_info.line_start) return false;
-
-  printf("%.*s", line_info.line_end - line_info.line_start, source + line_info.line_start);
-  return true;
-}
-
 void compiler_init(int argc, char *argv[]) {
-  is_syntax = false;
+  is_highlight = false;
   lenth = 0;
   Assert(parse_args(argc, argv), "Source file not given");
-  lexer_init(source);
+  syntax_init(source);
 }
 
 void compiler_free() {
-  if (is_syntax) {
-    close_syntax_file();
+  if (is_highlight) {
+    close_highlight_file();
   }
   free_src();
-  lexer_free();
+  syntax_free();
   log_free();
 }
 
-static Token *tokens = NULL;
-
-static inline void comp_lexer() {
-  Log("Syntax output");
-  bool is_EOF = false;
-  int last_token_end = 0;
-  do{
-    Token *t = make_token(&is_EOF);
-    if (t == NULL) continue;
-    if (tokens == NULL) tokens = t;
-    if (is_syntax) {
-      const char *color;
-      switch (t->type) {
-      case TK_INT: case TK_VOID:
-        color = ASNI_FG_MAGENTA;
-        break;
-      case TK_CONST:
-      case TK_IF: case TK_ELSE:
-      case TK_DO: case TK_WHILE: case TK_BREAK: case TK_CONTINUE:
-      case TK_RETURN:
-        color = ASNI_FG_BLUE;
-        break;
-      case TK_INTCON:
-        color = ASNI_FG_YELLOW;
-        break;
-      case TK_ID:
-        color = ASNI_FG_GREEN;
-        break;
-      case TK_MNT: case TK_SNT:
-        color = ASNI_FG_BLACK;
-        break;
-      case TK_ERR_BIN_INTCON: case TK_ERR_DEC_INTCON: case TK_ERR_OCT_INTCON: case TK_ERR_INTCON:
-        color = ASNI_FG_RED;
-        break;
-      default:
-        color = ASNI_FG_WHITE;
-        break;
-      }
-      fprintf(syntax_fp, "%.*s" ASNI_FMT( "%.*s" , "%s" ), t->offset - last_token_end, source + last_token_end, color, t->lenth, t->str);
-      last_token_end = t->offset + t->lenth;
-    }
-  }while (!is_EOF);
-  if (is_syntax) {
-    fprintf(syntax_fp, "%s", source + last_token_end);
-  }
-  Assert(tokens, "Lexer error");
-  Log("Lexer success");
-}
-
 void compile() {
-  comp_lexer();
-  Log("Compile success");
+  if (syntax()) Log("Compile success");
   return;
 }
