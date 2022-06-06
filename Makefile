@@ -40,7 +40,7 @@ $(OBJ_DIR)/%.o: %.cc
 
 all: $(BINARY)
 
-$(BINARY): main.o lexer.o
+$(BINARY): $(OBJS)
 	@echo + LD $@
 	@$(LD) $(LDFLAGS) -o $@ $^
 
