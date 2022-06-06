@@ -68,7 +68,3 @@ SysY 语言的文法表示如下，其中 **`CompUnit`为开始符号**：
 1. 函数实参表 **FuncRParams** → Exp { ',' Exp }
 1. 单目运算符 **UnaryOp** → '+' | '−' | '!'
 1. 常量表达式 **ConstExp** → Exp 注：语义分析是需要确定为常量表达式
-
-### 处理后
-
-见 [syntax.md](syntax.md)

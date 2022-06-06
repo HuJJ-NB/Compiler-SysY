@@ -1,4 +1,4 @@
-#include <lexer.h>
+#include "lexer.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,7 +9,7 @@ static char *source = NULL;
 static size_t lenth;
 
 static inline bool read_src() {
-  FILE *fp = fopen("resource/test.c", "r");
+  FILE *fp = fopen("test.c", "r");
   assert(fp);
 
   fseek(fp, 0, SEEK_END);
