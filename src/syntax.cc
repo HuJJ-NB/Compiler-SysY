@@ -1,5 +1,5 @@
-#include <cstdio>
-#include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
 #include <syntax.h>
 #include <lexer.h>
 
@@ -788,13 +788,13 @@ static inline bool LVal() {
     } while (1);
 }
 
-//1. 表达式 **Exp** → LOrExp | LVal '=' Exp
+//1. 表达式 **Exp** → LVal '=' Exp | LOrExp
 static inline bool Exp() {
     STORE_P;
 
     do {
-        if (LOrExp()) {
-            printf("Exp → LOrExp\n");
+        if (LVal() && token(TK_ASSIGN) && Exp()) {
+            printf("Exp → LVal '=' Exp\n");
             return true;
         }
 
@@ -803,8 +803,8 @@ static inline bool Exp() {
     } while(0);
 
     do {
-        if (LVal() && token('=') && Exp()) {
-            printf("Exp → LVal '=' Exp\n");
+        if (LOrExp()) {
+            printf("Exp → LOrExp\n");
             return true;
         }
 
