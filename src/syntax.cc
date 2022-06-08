@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <syntax.h>
-#include <lexer.h>
 
 #define STORE_P \
     Token_stack_node *store; \
