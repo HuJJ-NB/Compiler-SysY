@@ -199,7 +199,7 @@ Token *make_token(bool *is_EOF) {
           tokens[nr_token].type = type;
           break;
       }
-      strncpy(tokens[nr_token].str, substr_start, substr_len);
+      strncpy(tokens[nr_token].str, substr_start, (substr_len > MAX_TOKEN_STR_LEN) ? MAX_TOKEN_STR_LEN : substr_len);
 
       nr_token++;
       break;

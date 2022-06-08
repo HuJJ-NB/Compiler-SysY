@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define MAX_TOKEN_STR_LEN 512
+
 typedef struct line {
   int line_start;
   int line_end;
@@ -10,7 +12,7 @@ typedef struct line {
 
 typedef struct token {
   int type;
-  char str[32];
+  char str[MAX_TOKEN_STR_LEN];
   uint64_t val;
 
   int line_no;
