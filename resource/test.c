@@ -1,3 +1,5 @@
-int main(){
-  int i = 1 + 3;
+int inc()
+{
+  int i;
+  i = i+1;
 }

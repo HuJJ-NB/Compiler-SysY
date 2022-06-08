@@ -3,7 +3,6 @@
 #include <syntax.h>
 #include <debug.h>
 
-#include <stdlib.h>
 #include <string.h>
 #include <getopt.h>
 
@@ -116,23 +115,16 @@ static inline bool parse_args(int argc, char *argv[]) {
   return read_from_file;
 }
 
-void compiler_init(int argc, char *argv[]) {
+int compile(int argc, char *argv[]) {
   is_highlight = false;
   lenth = 0;
   Assert(parse_args(argc, argv), "Source file not given");
-  syntax_init(source);
-}
 
-void compiler_free() {
-  if (is_highlight) {
-    close_highlight_file();
-  }
+  int ret = syntax(source);
+  
+  close_highlight_file();
   free_src();
-  syntax_free();
   log_free();
-}
 
-bool compile() {
-  Log("Compile start");
-  return !syntax();
+  return ret;
 }

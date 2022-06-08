@@ -38,20 +38,20 @@ static struct rule {
   {"<", TK_LT},
   {">=", TK_GTE},
   {">", TK_GT},
-  {"!", '!'},
-  {"&&|&", '&'},
-  {"\\|\\||\\|", '|'},
+  {"!", TK_LNOT},
+  {"&&", TK_LAND},
+  {"\\|\\|", TK_LOR},
   {"=", TK_ASSIGN},
   {"\\+=", TK_ADD_ASSIGN},
   {"-=", TK_SUB_ASSIGN},
   {"\\*=", TK_MUL_ASSIGN},
   {"/=", TK_DIV_ASSIGN},
   {"%=", TK_MOD_ASSIGN},
-  {"\\+", '+'},
-  {"-", '-'},
-  {"\\*", '*'},
-  {"/", '/'},
-  {"%", '%'},
+  {"\\+", TK_ADD},
+  {"-", TK_SUB},
+  {"\\*", TK_MUL},
+  {"/", TK_DIV},
+  {"%", TK_MOD},
 
   {"\".*?\"", TK_STR},
 
@@ -98,7 +98,7 @@ static int position;
 static Token tokens[MAX_NR_TOKEN + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used , just book the finsh position.
 static int nr_token __attribute__((used))  = 0;
 static Line lines[MAX_NR_LINE + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used , just book the finsh position.
-static int nr_line __attribute__((used))  = 0;
+static int nr_line __attribute__((used))  = 1;
 
 /* Rules are used for many times.
  * Therefore we compile them only once before any usage.
@@ -121,7 +121,7 @@ void lexer_init(char *src) {
   nr_token = 0;
   src_len = strlen(src);
   src_inner = src;
-  nr_line = 0;
+  nr_line = 1;
 }
 
 void lexer_free() {
@@ -133,7 +133,7 @@ void lexer_free() {
 }
 
 Line get_line_info(int line_no) {
-  if (line_no >= nr_line) return (Line) {0, -1};
+  if (line_no == 0 || line_no >= nr_line) return (Line) {0, -1};
   return lines[line_no];
 }
 
