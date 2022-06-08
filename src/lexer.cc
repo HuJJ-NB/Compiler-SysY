@@ -133,7 +133,7 @@ void lexer_free() {
 }
 
 Line get_line_info(int line_no) {
-  if (line_no >= nr_line) return Line{0, -1};
+  if (line_no >= nr_line) return (Line) {0, -1};
   return lines[line_no];
 }
 
