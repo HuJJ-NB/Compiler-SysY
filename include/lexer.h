@@ -5,12 +5,12 @@
 
 #define MAX_TOKEN_STR_LEN 512
 
-typedef struct line {
+typedef struct {
   int line_start;
   int line_end;
 }Line;
 
-typedef struct token {
+typedef struct {
   int type;
   char str[MAX_TOKEN_STR_LEN];
   uint64_t val;

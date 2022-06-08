@@ -20,7 +20,7 @@ typedef struct Token_stack_node {
     struct Token_stack_node *next;
 }Token_stack_node;
 
-typedef struct Token_stack {
+typedef struct {
     Token_stack_node *tokens_head, *tokens_p, *tokens_tail;
 }Token_stack;
 static Token_stack tokens = {NULL, NULL, NULL};
