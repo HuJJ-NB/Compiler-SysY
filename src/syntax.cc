@@ -1126,7 +1126,5 @@ void syntax_free(){
 }
 
 bool syntax(){
-    if(CompUnit() && token(TK_EOF)) return true;
-    printf("error\n");
-    return false;
+    return CompUnit() && token(TK_EOF);
 }

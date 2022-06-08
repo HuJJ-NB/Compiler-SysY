@@ -132,7 +132,7 @@ void compiler_free() {
   log_free();
 }
 
-void compile() {
-  if (syntax()) Log("Compile success");
-  return;
+bool compile() {
+  Log("Compile start");
+  return !syntax();
 }

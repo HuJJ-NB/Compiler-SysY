@@ -3,7 +3,7 @@
 
 int main(int argc, char *argv[]) {
     compiler_init(argc, argv);
-    compile();
+    int ret = compile();
     compiler_free();
-    return 0;
+    return ret;
 }
