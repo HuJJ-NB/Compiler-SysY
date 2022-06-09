@@ -50,6 +50,6 @@ typedef struct SyntaxUnit{
     Token *token;
 } SyntaxUnit;
 
-int syntax(char *src);
+bool syntax(char *src);
 
 #endif

@@ -10,17 +10,16 @@ LDFLAGS += $(CFLAGS_BUILD) -lpcre
 
 .PHONY: run pre
 
-RESOURCE_PATH := $(WORK_DIR)/resource
-SOURCE_FILES := $(shell find $(RESOURCE_PATH)/*)
-LOG_FILE := $(BUILD_DIR)/log.txt
-HIGHLIGHT_FILE := $(BUILD_DIR)/highlight.txt
+INPUT_PATH := $(WORK_DIR)/resource
+INPUT_FILES := $(shell find $(INPUT_PATH)/*)
+OUTPUT_PATH := $(BUILD_DIR)/output
 
-ARGS := -l $(LOG_FILE)
+ARG := `echo "$(patsubst $(INPUT_PATH)/%,%,$(INPUT_FILES))" | sed 's/\([_0-9a-zA-Z]*\)\.\([_0-9a-zA-Z]*\)/$(subst /,\/,$(INPUT_PATH))\/\1.\2 -o $(subst /,\/,$(OUTPUT_PATH))\/\1.ast/g'`
 
 run:$(BINARY)
-	@for source in $(SOURCE_FILES); do \
-		$(BINARY) $(ARGS) $${source} > /dev/null && echo Compile $${source} || echo Error $${source}; \
-	done
+	@mkdir -p $(OUTPUT_PATH)
+	@$(BINARY) $(ARG)
+
 
 # vs code clangd use compile_commands.json to work
 pre:

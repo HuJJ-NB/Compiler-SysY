@@ -6,33 +6,37 @@
 
 ## 运行
 
-- `make run`或者`./build/app SOURCE_FILE -l LOG_FILE`
+- `make run`或者`./build/app { INPUT_FILE [ -o OUTPUT_FILE ] }`
 
 ## 目录
 
 ``` shell
   .
+  ├── Makefile
+  ├── README.md
   ├── build
+  │   ├── app
+  │   ├── obj-app
+  │   └── output
   ├── include
   │   ├── compiler.h
   │   ├── debug.h
   │   ├── lexer.h
   │   └── syntax.h
-  ├── Makefile
-  ├── README.md
   ├── resource
-  │   └── test.c
   ├── script
   │   └── build.mk
   └── src
       ├── compiler.cc
       ├── lexer.cc
-      ├── log.cc
       ├── main.cc
+      ├── output.cc
       └── syntax.cc
 ```
 
 ## TODO
 
-- [ ] 更改输出格式。
-- [ ] 使logfile和源文件在处理完参数之后统一按顺序打开。
+- [x] 更改输出格式。
+- [ ] 报错。
+- [ ] 更加工程化。
+- [ ] 语义分析。

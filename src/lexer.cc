@@ -110,7 +110,6 @@ void lexer_init(char *src) {
 
   for (i = 0; i < NR_REGEX; i ++) {
     if (re[i]) {
-      printf("Rebuild rules[%d]\n", i);
       pcre_free(re[i]);
     }
     re[i] = pcre_compile(rules[i].regex, 0, &pcre_error, &pcre_error_offset, NULL);
@@ -119,6 +118,7 @@ void lexer_init(char *src) {
   Log("Compile %d RegEx rules by PCRE Library", NR_REGEX);
 
   nr_token = 0;
+  position = 0;
   src_len = strlen(src);
   src_inner = src;
   nr_line = 1;
@@ -128,6 +128,7 @@ void lexer_free() {
   int i;
   for (i = 0; i < NR_REGEX; ++i) {
     pcre_free(re[i]);
+    re[i] = NULL;
   }
   Log("Free %d RegEx rules", NR_REGEX);
 }
@@ -207,8 +208,8 @@ Token *make_token(bool *is_EOF) {
   }
 
   if (rule_idx == NR_REGEX) {
-    printf("No match at %d\n", position);
-    printf("%d %d\n", nr_token, tokens[nr_token].offset);
+    Error("No match at %d\n%d %d\n", position, nr_token, tokens[nr_token].offset);
+    exit(0);
     return NULL;
   }
   return tokens + nr_token - 1;

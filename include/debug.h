@@ -48,6 +48,26 @@ void log_free();
     } \
   } while (0) \
 
+void set_output(char *output);
+void close_output();
+
+#define Error(format, ...) \
+  do { \
+    fflush(stdout); \
+    fprintf(stderr, ASNI_FMT("[%s:%d %s] " format, ASNI_FG_RED) "\n", \
+        __FILE__, __LINE__, __func__, ## __VA_ARGS__); \
+  } while (0)
+
+#define Print(format, ...) \
+  do { \
+    extern FILE *output_file; \
+    if (output_file) { \
+      fprintf(output_file, format, ## __VA_ARGS__); \
+    } else { \
+      printf(format, ## __VA_ARGS__); \
+    } \
+  } while (0)
+
 // ---------- Assert ---------
 
 #define Assert(cond, format, ...) \

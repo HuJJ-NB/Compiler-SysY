@@ -41,233 +41,233 @@ static inline void syntax_unit_brother_delete(SyntaxUnit *unit) {
 }
 
 static inline void syntax_unit_visit(SyntaxUnit *unit, int depth = 0) {
-    printf("%*s", 2 * depth, "");
+    Print("%*s", 2 * depth, "");
     switch (unit->type) {
     case SYN_CompUnit:
-        printf("CompUnit :%d\n", unit->line_no);
+        Print("CompUnit :%d\n", unit->line_no);
         break;
     case SYN_Decl:
-        printf("Decl :%d\n", unit->line_no);
+        Print("Decl :%d\n", unit->line_no);
         break;
     case SYN_ConstDecl:
-        printf("ConstDecl :%d\n", unit->line_no);
+        Print("ConstDecl :%d\n", unit->line_no);
         break;
     case SYN_BType:
-        printf("BType :%d\n", unit->line_no);
+        Print("BType :%d\n", unit->line_no);
         break;
     case SYN_ConstDef:
-        printf("ConstDef :%d\n", unit->line_no);
+        Print("ConstDef :%d\n", unit->line_no);
         break;
 	case SYN_ConstInitArray:
-        printf("ConstInitArray :%d\n", unit->line_no);
+        Print("ConstInitArray :%d\n", unit->line_no);
         break;
 	case SYN_ConstInitVal:
-        printf("ConstInitVal :%d\n", unit->line_no);
+        Print("ConstInitVal :%d\n", unit->line_no);
         break;
 	case SYN_VarDecl:
-        printf("VarDecl :%d\n", unit->line_no);
+        Print("VarDecl :%d\n", unit->line_no);
         break;
 	case SYN_VarDef:
-        printf("VarDef :%d\n", unit->line_no);
+        Print("VarDef :%d\n", unit->line_no);
         break;
 	case SYN_InitArray:
-        printf("InitArray :%d\n", unit->line_no);
+        Print("InitArray :%d\n", unit->line_no);
         break;
 	case SYN_InitVal:
-        printf("InitVal :%d\n", unit->line_no);
+        Print("InitVal :%d\n", unit->line_no);
         break;
 	case SYN_FuncDef:
-        printf("FuncDef :%d\n", unit->line_no);
+        Print("FuncDef :%d\n", unit->line_no);
         break;
 	case SYN_FuncType:
-        printf("FuncType :%d\n", unit->line_no);
+        Print("FuncType :%d\n", unit->line_no);
         break;
 	case SYN_FuncFParams:
-        printf("FuncFParams :%d\n", unit->line_no);
+        Print("FuncFParams :%d\n", unit->line_no);
         break;
 	case SYN_FuncFParamIndex:
-        printf("FuncFParamIndex :%d\n", unit->line_no);
+        Print("FuncFParamIndex :%d\n", unit->line_no);
         break;
 	case SYN_FuncFParam:
-        printf("FuncFParam :%d\n", unit->line_no);
+        Print("FuncFParam :%d\n", unit->line_no);
         break;
 	case SYN_Block:
-        printf("Block :%d\n", unit->line_no);
+        Print("Block :%d\n", unit->line_no);
         break;
 	case SYN_BlockItem:
-        printf("BlockItem :%d\n", unit->line_no);
+        Print("BlockItem :%d\n", unit->line_no);
         break;
 	case SYN_Stmt:
-        printf("Stmt :%d\n", unit->line_no);
+        Print("Stmt :%d\n", unit->line_no);
         break;
 	case SYN_IFMatchedStmt:
-        printf("IFMatchedStmt :%d\n", unit->line_no);
+        Print("IFMatchedStmt :%d\n", unit->line_no);
         break;
 	case SYN_IFUnmatchedStmt:
-        printf("IFUnmatchedStmt :%d\n", unit->line_no);
+        Print("IFUnmatchedStmt :%d\n", unit->line_no);
         break;
 	case SYN_LVal:
-        printf("LVal :%d\n", unit->line_no);
+        Print("LVal :%d\n", unit->line_no);
         break;
 	case SYN_Exp:
-        printf("Exp :%d\n", unit->line_no);
+        Print("Exp :%d\n", unit->line_no);
         break;
 	case SYN_LOrExp:
-        printf("LOrExp :%d\n", unit->line_no);
+        Print("LOrExp :%d\n", unit->line_no);
         break;
 	case SYN_LAndExp:
-        printf("LAndExp :%d\n", unit->line_no);
+        Print("LAndExp :%d\n", unit->line_no);
         break;
 	case SYN_EqExp:
-        printf("EqExp :%d\n", unit->line_no);
+        Print("EqExp :%d\n", unit->line_no);
         break;
 	case SYN_RelExp:
-        printf("RelExp :%d\n", unit->line_no);
+        Print("RelExp :%d\n", unit->line_no);
         break;
 	case SYN_AddExp:
-        printf("AddExp :%d\n", unit->line_no);
+        Print("AddExp :%d\n", unit->line_no);
         break;
 	case SYN_MulExp:
-        printf("MulExp :%d\n", unit->line_no);
+        Print("MulExp :%d\n", unit->line_no);
         break;
 	case SYN_UnaryExp:
-        printf("UnaryExp :%d\n", unit->line_no);
+        Print("UnaryExp :%d\n", unit->line_no);
         break;
 	case SYN_PrimaryExp:
-        printf("PrimaryExp :%d\n", unit->line_no);
+        Print("PrimaryExp :%d\n", unit->line_no);
         break;
 	case SYN_Number:
-        printf("Number :%d\n", unit->line_no);
+        Print("Number :%d\n", unit->line_no);
         break;
 	case SYN_FuncRParams:
-        printf("FuncRParams :%d\n", unit->line_no);
+        Print("FuncRParams :%d\n", unit->line_no);
         break;
 	case SYN_UnaryOp:
-        printf("UnaryOp :%d\n", unit->line_no);
+        Print("UnaryOp :%d\n", unit->line_no);
         break;
 	case SYN_ConstExp:
-        printf("ConstExp :%d\n", unit->line_no);
+        Print("ConstExp :%d\n", unit->line_no);
         break;
 	case SYN_TOKEN:
         switch (unit->token->type) {
 		case TK_INTCON:
-            printf("INTCON %s\n", unit->token->str);
+            Print("INTCON %s\n", unit->token->str);
             break;
 		case TK_ID:
-            printf("ID %s\n", unit->token->str);
+            Print("ID %s\n", unit->token->str);
             break;
 		case TK_CONST:
-            printf("KEY CONST\n");
+            Print("KEY CONST\n");
             break;
 		case TK_INT:
-            printf("KEY INT\n");
+            Print("KEY INT\n");
             break;
 		case TK_VOID:
-            printf("KEY VOID\n");
+            Print("KEY VOID\n");
             break;
 		case TK_IF:
-            printf("KEY IF\n");
+            Print("KEY IF\n");
             break;
 		case TK_ELSE:
-            printf("KEY ELSE\n");
+            Print("KEY ELSE\n");
             break;
 		case TK_WHILE:
-            printf("KEY WHILE\n");
+            Print("KEY WHILE\n");
             break;
 		case TK_DO:
-            printf("KEY DO\n");
+            Print("KEY DO\n");
             break;
 		case TK_BREAK:
-            printf("KEY BREAK\n");
+            Print("KEY BREAK\n");
             break;
 		case TK_CONTINUE:
-            printf("KEY CONTINUE\n");
+            Print("KEY CONTINUE\n");
             break;
 		case TK_RETURN:
-            printf("KEY RETURN\n");
+            Print("KEY RETURN\n");
             break;
 		case TK_ASSIGN:
-            printf("ASSIGN =\n");
+            Print("ASSIGN =\n");
             break;
 		case TK_ADD_ASSIGN:
-            printf("ASSIGN +=\n");
+            Print("ASSIGN +=\n");
             break;
 		case TK_SUB_ASSIGN: 
-            printf("ASSIGN -=\n");
+            Print("ASSIGN -=\n");
             break;
 		case TK_MUL_ASSIGN:
-            printf("ASSIGN *=\n");
+            Print("ASSIGN *=\n");
             break;
 		case TK_DIV_ASSIGN:
-            printf("ASIGN /=\n");
+            Print("ASIGN /=\n");
             break;
 		case TK_MOD_ASSIGN:
-            printf("ASIGN %%=\n");
+            Print("ASIGN %%=\n");
             break;
 		case TK_EQUAL:
-            printf("OP ==\n");
+            Print("OP ==\n");
             break;
 		case TK_NEQUAL:
-            printf("OP !=\n");
+            Print("OP !=\n");
             break;
 		case TK_LTE:
-            printf("OP <=\n");
+            Print("OP <=\n");
             break;
 		case TK_LT:
-            printf("OP <\n");
+            Print("OP <\n");
             break;
 		case TK_GTE:
-            printf("OP >=\n");
+            Print("OP >=\n");
             break;
 		case TK_GT:
-            printf("OP >\n");
+            Print("OP >\n");
             break;
         case TK_LAND:
-            printf("OP &&\n");
+            Print("OP &&\n");
             break;
         case TK_LOR:
-            printf("OP ||\n");
+            Print("OP ||\n");
             break;
         case TK_LNOT:
-            printf("OP !\n");
+            Print("OP !\n");
         case TK_ADD:
-            printf("OP +\n");
+            Print("OP +\n");
             break;
         case TK_SUB:
-            printf("OP -\n");
+            Print("OP -\n");
             break;
         case TK_MUL:
-            printf("OP *\n");
+            Print("OP *\n");
             break;
         case TK_DIV:
-            printf("OP /\n");
+            Print("OP /\n");
             break;
         case TK_MOD:
-            printf("OP %%\n");
+            Print("OP %%\n");
             break;
         case '(':
-            printf("LPAREN (\n");
+            Print("LPAREN (\n");
             break;
         case ')':
-            printf("RPAREN )\n");
+            Print("RPAREN )\n");
             break;
         case '[':
-            printf("LBRACKET [\n");
+            Print("LBRACKET [\n");
             break;
         case ']':
-            printf("RBRACKET ]\n");
+            Print("RBRACKET ]\n");
             break;
         case '{':
-            printf("LBRACE {\n");
+            Print("LBRACE {\n");
             break;
         case '}':
-            printf("RBRACE }\n");
+            Print("RBRACE }\n");
             break;
         case ';':
-            printf("SEMICN ;\n");
+            Print("SEMICN ;\n");
             break;
         case ',':
-            printf("COMMA ,\n");
+            Print("COMMA ,\n");
             break;
         }
         break;
@@ -1892,7 +1892,7 @@ static inline bool ConstExp(SyntaxUnit *tree) {
     } while(0);
 }
 
-int syntax(char *src){
+bool syntax(char *src){
     lexer_init(src);
 
     SyntaxUnit *tree = syntax_unit_new();
@@ -1901,5 +1901,5 @@ int syntax(char *src){
     syntax_unit_delete(tree);
 
     lexer_free();
-    return !ret;
+    return ret;
 }

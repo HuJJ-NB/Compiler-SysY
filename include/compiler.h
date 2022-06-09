@@ -1,6 +1,8 @@
 #ifndef __COMPILER_H__
 #define __COMPILER_H__
 
-int compile(int argc, char *argv[]);
+#include <debug.h>
+
+bool compile(char *input, char *output);
 
 #endif
