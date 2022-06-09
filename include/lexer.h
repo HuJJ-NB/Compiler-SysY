@@ -36,6 +36,8 @@ Token *make_token(bool *is_EOF);
 
 Line get_line_info(int line_no);
 
+bool lexer_is_error();
+
 void lexer_init(char *src);
 void lexer_free();
 
@@ -84,6 +86,7 @@ enum type {
   TK_MUL,
   TK_DIV,
   TK_MOD,
+  TK_ERR,
 
   /* TODO: Add more token types */
 };

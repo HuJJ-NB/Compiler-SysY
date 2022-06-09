@@ -1896,8 +1896,10 @@ bool syntax(char *src){
     lexer_init(src);
 
     SyntaxUnit *tree = syntax_unit_new();
-    bool ret = CompUnit(tree) && is_eof();
-    syntax_unit_visit(tree);
+    bool ret = CompUnit(tree) && is_eof() && !lexer_is_error();
+    if (ret) {
+        syntax_unit_visit(tree);
+    }
     syntax_unit_delete(tree);
 
     lexer_free();

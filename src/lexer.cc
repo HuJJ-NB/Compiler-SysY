@@ -88,6 +88,8 @@ static struct rule {
   {"[\\dA-Fa-f]*[G-Zg-z_][\\w]*", TK_ERR_INTCON},
   {"[1-9]\\d*[A-Fa-f][\\dA-Fa-f]*", TK_ERR_DEC_INTCON},
   {"[1-9]\\d*", TK_DEC_INTCON},
+
+  {".*", TK_ERR},
 };
 #define NR_REGEX ARRLEN(rules)
 static pcre *re[NR_REGEX];
@@ -95,10 +97,15 @@ static pcre *re[NR_REGEX];
 static char *src_inner = NULL;
 static size_t src_len;
 static int position;
+static bool is_error;
 static Token tokens[MAX_NR_TOKEN + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used , just book the finsh position.
 static int nr_token __attribute__((used))  = 0;
 static Line lines[MAX_NR_LINE + 1] __attribute__((used)) = {}; //tokens[MAX_NR_TOKEN] is not used , just book the finsh position.
 static int nr_line __attribute__((used))  = 1;
+
+bool lexer_is_error() {
+  return is_error;
+}
 
 /* Rules are used for many times.
  * Therefore we compile them only once before any usage.
@@ -119,6 +126,7 @@ void lexer_init(char *src) {
 
   nr_token = 0;
   position = 0;
+  is_error = false;
   src_len = strlen(src);
   src_inner = src;
   nr_line = 1;
@@ -182,6 +190,16 @@ Token *make_token(bool *is_EOF) {
       tokens[nr_token].offset = position;
       tokens[nr_token].lenth = substr_len;
       position += substr_len;
+      lines[nr_line].line_end = position;
+
+      if (type == TK_ERR_INTCON || type == TK_ERR_BIN_INTCON || type == TK_ERR_OCT_INTCON || type == TK_ERR_DEC_INTCON || type == TK_ERR) {
+        if (substr_len > 1) 
+          Error("%s Line %d %d\n%.*s\n%*s%c%*s%c", type == TK_ERR ? "No match at Line" : "Illegal Integer Constant", nr_line, tokens[nr_token].offset - lines[nr_line].line_start, lines[nr_line].line_end - lines[nr_line].line_start, src_inner + lines[nr_line].line_start, tokens[nr_token].offset - lines[nr_line].line_start, "", '^', substr_len - 2, "", '^');
+        else
+          Error("%s Line %d %d\n%.*s\n%*s%c", type == TK_ERR ? "No match at Line" : "Illegal Integer Constant", nr_line, tokens[nr_token].offset - lines[nr_line].line_start, lines[nr_line].line_end - lines[nr_line].line_start, src_inner + lines[nr_line].line_start, tokens[nr_token].offset - lines[nr_line].line_start, "", '^');
+        is_error = true;
+        return NULL;
+      }
 
       switch (type) {
         case TK_DEC_INTCON:
@@ -205,12 +223,6 @@ Token *make_token(bool *is_EOF) {
       nr_token++;
       break;
     }
-  }
-
-  if (rule_idx == NR_REGEX) {
-    Error("No match at %d\n%d %d\n", position, nr_token, tokens[nr_token].offset);
-    exit(0);
-    return NULL;
   }
   return tokens + nr_token - 1;
 }
