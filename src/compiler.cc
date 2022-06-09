@@ -39,9 +39,7 @@ static inline void free_src() {
 bool compile(char *input, char *output) {
   lenth = 0;
   if (!read_src(input)) return false;
-  if (output != NULL) {
-    set_output(output);
-  }
+  set_output(output);
 
   bool ret = syntax(source);
 

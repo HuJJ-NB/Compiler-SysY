@@ -23,6 +23,9 @@ void set_output(char *output) {
 }
 
 void close_output() {
-    Log("Close output file");
-    fclose(output_file);
+    if (output_file) {
+        Log("Close output file");
+        fclose(output_file);
+        output_file = NULL;
+    }
 }
